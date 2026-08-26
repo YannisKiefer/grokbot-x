@@ -1,0 +1,32 @@
+# Secrets and local env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials*
+typefully.env
+*API_KEY*
+*TOKEN*
+
+# Real SkillOpt rollouts. Keep examples/ only.
+skillopt/trajectories.jsonl
+skillopt/held_out.json
+skillopt/epochs/*.json
+!skillopt/epochs/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
