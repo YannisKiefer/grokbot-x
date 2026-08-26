@@ -142,10 +142,10 @@ scripts/                         Typefully helpers
 
 ## GitHub topics
 
-Suggested topics when you publish this repo:
+These topics are already set on the GitHub repository:
 
-`grok` `grok-bot` `twitter` `x-twitter` `marketing-automation` `growth`
-`skillopt` `self-learning-agents` `typefully`
+`grok` `grok-bot` `grokbot` `twitter` `x-twitter` `marketing-automation` `growth-hacking`
+`skillopt` `self-learning-agents` `typefully` `ai-agents`
 
 ## License
 
