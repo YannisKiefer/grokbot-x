@@ -1,0 +1,7 @@
+{
+  "val_ids": ["ex_002", "ex_004"],
+  "metric": "score",
+  "gate": "strict_improve_mean_val",
+  "learning_rate_max_edits": 4,
+  "min_trajectories_before_edit": 8
+}
