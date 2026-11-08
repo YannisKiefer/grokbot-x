@@ -1,5 +1,8 @@
 # grokbot-x
 
+[![CI](https://github.com/YannisKiefer/grokbot-x/actions/workflows/ci.yml/badge.svg)](https://github.com/YannisKiefer/grokbot-x/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **Self-learning X/Twitter growth system for Grok Bot.**
 
 Searching GitHub for Grok Bot / GrokBot automations / Twitter growth agents

@@ -18,12 +18,16 @@ skillopt/held_out.json
 skillopt/epochs/*.json
 !skillopt/epochs/.gitkeep
 
+# Local growth analysis. Deliberately not published (private strategy).
+growth/
+
 # Python
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 .pytest_cache/
+.ruff_cache/
 
 # OS / editor
 .DS_Store
