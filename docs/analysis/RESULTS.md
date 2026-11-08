@@ -66,3 +66,23 @@ All checks passed!
   trajectories; the weights (x1.35 bonus, 0.5/1.5/2.0 engagement weights)
   are directional choices from the research, not fitted to data. The
   `score_version` field exists exactly so a future refit is auditable.
+
+## Final report (2026-11-08)
+
+Branch glm/upgrade-1108, PR #2. Commits: fece010 (analysis), 49b48ec
+(hygiene+privacy), 1e5daa5 (research+comparison), 2cd3549 (verifiable
+reward, computed gate, replay, validation, 94 tests, X post guide),
+4adafeb (README quickstart, publish reframe), 81a0aef (demo script).
+Tests: 94 passed (new code), 84 failed / 10 passed (same suite on old
+code). ruff clean. Comparison scores before -> after: loop rigor 4->8,
+tests/CI 0->9, docs 7->9, privacy 6->9, setup 7->8, safety 8->9, results
+3->5; overall 5.5 -> 8.0 (COMPARISON.md). Privacy: no secrets in tree or
+history (gitleaks clean); one personal Gmail in commit author metadata
+(nothing to rotate, set GitHub noreply email + block exposed emails);
+BRAND-BIBLE.template.md publishes full product doctrine, owner's call.
+Not done/proven: real-API Typefully publish (no credentials; scripts
+verified by mocked tests only), real-trajectory proof that the new score
+correlates with growth, Thompson bandit (documented, not added).
+growth/GROWTH.md (local, gitignored) has the star/traffic analysis and
+launch playbook: GitHub topics to set, social preview brief, 3 X posts,
+Show HN draft, subreddits, awesome-lists.
