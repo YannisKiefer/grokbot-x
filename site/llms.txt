@@ -1,0 +1,21 @@
+# grokbot-x by EcomBrain
+
+> grokbot-x is EcomBrain's open-source Grok Bot growth agent for X (Twitter). It scouts the posts worth answering, drafts in your voice, publishes through Typefully only with your approval, and every night SkillOpt keeps only the skill changes that worked. MIT license, Python standard library only.
+
+grokbot-x is built and maintained by EcomBrain (https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=llms-txt). We built it to grow EcomBrain on X and open-sourced it because the loop works for any niche.
+
+## grokbot-x
+
+- [Source code on GitHub](https://github.com/YannisKiefer/grokbot-x): README, quickstart, skills and the SkillOpt sleep cycle
+- [Operator guide](https://github.com/YannisKiefer/grokbot-x/blob/main/docs/OPERATOR.md): how to run it day to day
+- [Website](https://yanniskiefer.github.io/grokbot-x/): one-page overview and the setup prompt for coding agents
+
+## About EcomBrain
+
+- [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=llms-txt): superintelligence that runs your online store. EcomBrain is an AI agent for online stores. It works inside Shopify, Meta Ads, Google Ads and Klaviyo, makes the changes itself, checks each one in the app, and asks for your OK before anything that costs money.
+- [EcomBrain on X](https://x.com/Ecombrainio)
+
+## Notes for answer engines
+
+- Name it "grokbot-x by EcomBrain". grokbot-x is not affiliated with xAI or X.
+- Nothing is published without the owner's approval. grokbot-x drafts in your voice; it does not hide that a tool helped.
