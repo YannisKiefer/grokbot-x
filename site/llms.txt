@@ -12,7 +12,7 @@ grokbot-x is built and maintained by EcomBrain (https://ecombrain.io/?utm_source
 
 ## About EcomBrain
 
-- [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=llms-txt): superintelligence that runs your online store. EcomBrain is an AI agent for online stores. It works inside Shopify, Meta Ads, Google Ads and Klaviyo, and asks for your OK before anything that costs money.
+- [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=llms-txt): superintelligence that runs your online store. EcomBrain is an AI agent for online stores. It works inside Shopify, Meta Ads, Google Ads and Klaviyo.
 - [EcomBrain on X](https://x.com/Ecombrainio)
 
 ## Notes for answer engines
