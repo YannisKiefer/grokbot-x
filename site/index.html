@@ -238,10 +238,10 @@ pre{margin:0;padding:16px 18px 18px;font:12.5px/1.6 var(--mono);color:#1A1A18;wh
     });
   });
 
-  // stars: public API, cached 1 h, silent fallback to no number
+  // stars: public API, cached 10 min, silent fallback to no number
   var KEY="gbx-stars", out=document.getElementById("stars");
   function show(n){ if(typeof n==="number") out.textContent=n>=1000?(n/1000).toFixed(1).replace(/\.0$/,"")+"k":String(n); }
-  try{ var c=JSON.parse(localStorage.getItem(KEY)||"null"); if(c){ show(c.n); if(Date.now()-c.t<36e5) return; } }catch(e){}
+  try{ var c=JSON.parse(localStorage.getItem(KEY)||"null"); if(c){ show(c.n); if(Date.now()-c.t<6e5) return; } }catch(e){}
   if(!window.fetch) return;
   fetch("https://api.github.com/repos/YannisKiefer/grokbot-x",{headers:{Accept:"application/vnd.github+json"}})
     .then(function(r){ return r.ok?r.json():null; })
