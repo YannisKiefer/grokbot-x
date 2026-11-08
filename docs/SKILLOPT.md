@@ -131,13 +131,16 @@ python3 skillopt/sleep_cycle.py gate accept \
    5 val, never fewer than 5 val; both set in `held_out.json`). Otherwise
    it accepts only if the mean improves AND the bootstrap interval of the
    improvement is above zero.
-6. Every look at the val rows is an attempt. Each distinct proposal tried
-   since the last accept (by `gate accept` or `replay`; the same file
-   twice counts once) raises the bar: attempt k needs a
+6. Every look at the val rows is an attempt. Each look since the last
+   accept (by `gate accept` or `replay`: a new proposal, or the same file
+   again after new rows or refreshed metrics; the same file on unchanged
+   data counts once) raises the bar: attempt k needs a
    `1 - 0.10/(k(k+1))` interval (95%, 98.3%, 99.2%, ...), so all attempts
    together keep the false-accept rate near 5%. Without this, 20 tries on
    the same rows accepted a pure-noise edit 76% of the time in simulation;
-   with it, 8% for log-scale rewards like ours. Attempts live in
+   with it, 8% for log-scale rewards like ours. Re-gating one trial every
+   night as rows arrive counts each night, so gate a trial once, when both
+   sides have enough rows. Attempts live in
    `epochs/attempts.jsonl`; an accept starts a new count.
 7. The receipt in `skillopt/epochs/` records the method (trial or replay),
    attempt, interval level and bounds, row counts, means, the verdict and

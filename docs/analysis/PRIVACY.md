@@ -9,34 +9,14 @@ IDs, real names, private URLs, internal paths.
 
 ## Findings
 
-### 1. Personal email in commit author metadata (history only)
+### 1. Owner-only items
 
-The repo owner's personal Gmail address (redacted here on purpose; exact
-address visible via `git log --format='%ae %an'`) is the author email on
-commits `95584eb`, `65b11fa`, `9e51a92`, `cade7d9` (main line), in two
-casings. Also present as `Co-authored-by` nowhere with the Gmail (those
-use the GitHub noreply address).
+Two non-secret items need a decision by the repo owner (commit author
+metadata settings, and how much product positioning the brand-bible
+template should carry). They were reported to the owner privately and
+are deliberately not detailed in this public file.
 
-- Exposure: anyone who clones the repo sees it.
-- Fix without rewriting history (history rewrite is ruled out):
-  1. GitHub -> Settings -> Emails: enable "Keep my email addresses
-     private" and "Block command line pushes that expose my email".
-  2. Local git config for this repo: `git config user.email
-     "YannisKiefer@users.noreply.github.com"`.
-- Nothing to rotate (an email cannot be revoked), but if the Gmail is
-  used for password resets, treat the address as public from now on.
-
-### 2. Strategy-level disclosure: docs/BRAND-BIBLE.template.md (user's call)
-
-The "template" is a complete 25-section product doctrine for an
-ecommerce-ops AI (category, enemy, specialist list, pricing structure,
-objection handling, acquisition story) with `YOUR_*` placeholders. It
-contains no secrets, IDs, or personal data, but it publishes the
-operator's real product positioning in full. No action taken in this
-branch; listed so the owner can decide whether to keep the depth,
-shorten it to a fill-in skeleton, or genericize the category sections.
-
-### 3. Clean otherwise
+### 2. Clean otherwise
 
 - gitleaks: no leaks across all commits.
 - No `/Users/...` paths, no server names, no private URLs in any commit.
@@ -45,7 +25,7 @@ shorten it to a fill-in skeleton, or genericize the category sections.
 - Example data (`examples/trajectories.example.jsonl`) uses fake handles
   (`yourhandle`, `example_ops`, `example_diary`, `example_founder_fr`),
   fake IDs, and marks every row "FAKE example".
-- No real names in file content (only commit metadata, finding 1).
+- No real names in file content.
 - No phone numbers (one grep false positive on a commit hash).
 - `skillopt/trajectories.jsonl`, `held_out.json`, `epochs/*.json` are
   gitignored so real operator data cannot be committed by accident.

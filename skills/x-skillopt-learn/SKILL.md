@@ -42,10 +42,13 @@ blockers only. No "want me to" questions.
 5. GATE: `python3 skillopt/sleep_cycle.py gate accept --summary "..."
    --edit "..." --skill skillopt/proposed.md`. The gate decides on held-out
    rows (live trial if logged, else replay) and adopts only if the gain's
-   interval is above zero. Every distinct proposal tried (gate or replay)
-   since the last accept raises the bar, so try few, well-reasoned edits.
+   interval is above zero. Every look since the last accept (gate or
+   replay; a new proposal, or the same one on new data) raises the bar, so
+   try few, well-reasoned edits and gate a trial only once.
    Prose-only edits need a live trial first.
    Never edit `best_skill.md` by hand.
+6. Mirror accepted rules into the next day's hourly behavior.
+7. Stay quiet unless a skill edit was accepted (one line) or a hard blocker.
 
 ## Live trial (prose edits)
 
@@ -55,8 +58,6 @@ blockers only. No "want me to" questions.
    and log normally. All trial rows use split val.
 3. Stop: once both sides have >= `min_val_rows` scored rows, run the gate
    with `--skill skillopt/proposed.md`. Accepted or not, the trial ends.
-6. Mirror accepted rules into the next day's hourly behavior.
-7. Stay quiet unless a skill edit was accepted (one line) or a hard blocker.
 
 ## Score
 

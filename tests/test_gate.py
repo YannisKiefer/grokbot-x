@@ -299,6 +299,27 @@ def test_accept_resets_the_attempt_count(sc, root):
     assert sum(1 for r in recs if r["attempt"] == 1) == 2  # bad.md, then next.md after reset
 
 
+def test_same_proposal_on_new_val_data_is_a_new_attempt(sc, root):
+    # re-gating one proposal every night as rows arrive is optional stopping
+    rows = val_rows()
+    write_root(root, rows, best_skill=NO_POLICY)
+    f = root / "p.md"
+    f.write_text('<!-- skillopt-policy {"min_parent_ratio": 30} -->', encoding="utf-8")
+    gate(sc, root, f)
+    gate(sc, root, f)  # unchanged data: same look
+    rows.append(make_row("vnew", views=999, ratio=20, split="val", text="fresh val row x"))
+    write_root(root, rows)
+    gate(sc, root, f)
+    assert sorted(json.loads(r.read_text())["attempt"] for r in receipts(root)) == [1, 1, 2]
+
+
+def test_status_top_lists_train_rows_only(sc, root, capsys):
+    write_root(root, [make_row("t1", views=10)] + val_rows())
+    sc.main(["--root", str(root), "status"])
+    top = json.loads(capsys.readouterr().out)["top"]
+    assert [t["id"] for t in top] == ["t1"]
+
+
 def test_replay_counts_as_an_attempt(sc, root, capsys):
     write_root(root, val_rows(), best_skill=NO_POLICY)
     peek = root / "peek.md"

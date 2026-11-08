@@ -15,9 +15,10 @@
   or off-policy replay with a coverage guard; accept only when the
   bootstrap interval of the gain is above zero. Receipts go to
   `skillopt/epochs/`, with a copy of the replaced skill.
-- Each distinct proposal tried since the last accept raises the gate's
-  interval level (alpha spending), so many tries on the same val rows
-  cannot find a lucky winner; trials compare against current-skill rows
+- Each look at the val rows since the last accept (a new proposal, or
+  the same one after the val data changed) raises the gate's interval
+  level (alpha spending), so many tries or nightly re-runs cannot find a
+  lucky winner; `status` lists top rows from train only; trials compare against current-skill rows
   from the same time window; small-sample interval correction;
   `min_val_rows` >= 5; `learning_rate_max_edits` is enforced; rejected
   edits record their verdict.

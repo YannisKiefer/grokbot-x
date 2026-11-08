@@ -77,9 +77,8 @@ Tests: 94 passed (new code), 84 failed / 10 passed (same suite on old
 code). ruff clean. Comparison scores before -> after: loop rigor 4->8,
 tests/CI 0->9, docs 7->9, privacy 6->9, setup 7->8, safety 8->9, results
 3->5; overall 5.5 -> 8.0 (COMPARISON.md). Privacy: no secrets in tree or
-history (gitleaks clean); one personal Gmail in commit author metadata
-(nothing to rotate, set GitHub noreply email + block exposed emails);
-BRAND-BIBLE.template.md publishes full product doctrine, owner's call.
+history (gitleaks clean); two non-secret owner-only items reported to
+the owner privately (see PRIVACY.md).
 Not done/proven: real-API Typefully publish (no credentials; scripts
 verified by mocked tests only), real-trajectory proof that the new score
 correlates with growth, Thompson bandit (documented, not added).

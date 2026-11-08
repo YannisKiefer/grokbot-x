@@ -14,8 +14,9 @@ judges "quality", and no skill edit can change the reward.
 The gate is machine-checked on held-out (val) rows only. An edit is
 accepted only if the mean reward improves AND the bootstrap interval of the
 improvement is above zero, with minimum row counts. The interval level
-rises with every distinct proposal tried since the last accept (95% for
-the first), so many tries on the same rows cannot find a lucky winner. Two kinds of
+rises with every look at the val rows since the last accept (95% for
+the first): a new proposal, or the same one after new rows or metrics,
+so many tries or nightly re-runs cannot find a lucky winner. Two kinds of
 evidence count:
 
 - trial: val rows logged while the proposed skill was live (their
@@ -71,9 +72,10 @@ W_LIKE, W_REPLY, W_BOOKMARK = 0.5, 1.5, 2.0
 DUPLICATE_JACCARD = 0.8
 BOOTSTRAP_RESAMPLES = 10_000
 BOOTSTRAP_LEVEL = 0.90
-# Every distinct proposal tried against the val rows since the last accept
-# is one more chance to win by luck. Alpha spending: attempt k gets
-# 0.10/(k(k+1)) of the error budget, so all attempts together stay <= 0.10
+# Every look at the val rows since the last accept (a new proposal, or the
+# same one after the val data changed) is one more chance to win by luck.
+# Alpha spending: attempt k gets 0.10/(k(k+1)) of the error budget, so all
+# attempts together stay <= 0.10
 # (attempt 1 needs a 95% interval, attempt 2 a 98.3% one, ...).
 FAMILY_ALPHA = 0.10
 MIN_VAL_ROWS_FLOOR = 5
@@ -490,10 +492,19 @@ def _mean(xs: list[float]) -> float:
     return sum(xs) / len(xs) if xs else 0.0
 
 
-def record_attempt(p: dict[str, Path], cmd: str, sha_b: str) -> int:
-    """Log one try of a proposal against the val rows; return k, the number
-    of distinct proposals tried since the last accept (this one included)."""
-    shas: set[str] = set()
+def look_key(sha_b: str, val: list[dict], scores: list[float]) -> str:
+    """One look = one proposal on one state of the val data. Re-running the
+    same file on unchanged rows gives the same answer, so it is the same
+    look; new rows or refreshed metrics make a new look (else nightly
+    re-gating of one proposal would be optional stopping)."""
+    data = sorted(zip([str(r.get("id")) for r in val], scores, strict=True))
+    return hashlib.sha256(json.dumps([sha_b, data]).encode("utf-8")).hexdigest()
+
+
+def record_attempt(p: dict[str, Path], cmd: str, sha_b: str, look: str) -> int:
+    """Log one look at the val rows; return k, the number of distinct looks
+    since the last accept (this one included)."""
+    looks: set[str] = set()
     if p["attempts"].exists():
         for line in p["attempts"].read_text(encoding="utf-8").splitlines():
             try:
@@ -501,15 +512,15 @@ def record_attempt(p: dict[str, Path], cmd: str, sha_b: str) -> int:
             except json.JSONDecodeError:
                 continue
             if obj.get("reset"):
-                shas = set()
-            elif isinstance(obj.get("sha_b"), str):
-                shas.add(obj["sha_b"])
-    shas.add(sha_b)
+                looks = set()
+            elif isinstance(obj.get("look") or obj.get("sha_b"), str):
+                looks.add(obj.get("look") or obj["sha_b"])
+    looks.add(look)
     p["attempts"].parent.mkdir(parents=True, exist_ok=True)
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     with p["attempts"].open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"ts": stamp, "cmd": cmd, "sha_b": sha_b}) + "\n")
-    return len(shas)
+        f.write(json.dumps({"ts": stamp, "cmd": cmd, "sha_b": sha_b, "look": look}) + "\n")
+    return len(looks)
 
 
 def reset_attempts(p: dict[str, Path], ts: str) -> None:
@@ -640,7 +651,8 @@ def _fmt_status(rows: list[dict], train: list[dict], val: list[dict]) -> dict:
                 "type": r.get("type"),
                 "notes": r.get("notes"),
             }
-            for r in scored
+            for r in train  # train only: val outcomes must not steer the next edit
+            if has_metrics(r)
         ),
         key=lambda x: -float(x["score"] or 0),
     )[:5]
@@ -824,7 +836,7 @@ def cmd_gate(
         sha_b = sha256_file(proposed)
         # held-out rows only; the operator reflected on train rows
         scores = score_rows(scored_val, cfg, all_rows=rows)
-        attempt = record_attempt(p, "gate", sha_b)
+        attempt = record_attempt(p, "gate", sha_b, look_key(sha_b, scored_val, scores))
         ev = evaluate_trial(
             scored_val, scores, sha_a, sha_b, min_val, attempt
         ) or evaluate_replay(scored_val, scores, policy_a, policy_b, min_val, attempt)
@@ -926,7 +938,8 @@ def cmd_replay(p: dict[str, Path], skill_a: str, skill_b: str) -> int:
     pb = parse_policy_file(Path(skill_b).expanduser())
     scores = score_rows(scored_val, cfg, all_rows=rows)
     # a replay is a look at the val rows too: it counts as an attempt
-    attempt = record_attempt(p, "replay", sha256_file(Path(skill_b).expanduser()))
+    sha_b = sha256_file(Path(skill_b).expanduser())
+    attempt = record_attempt(p, "replay", sha_b, look_key(sha_b, scored_val, scores))
     ev = evaluate_replay(
         scored_val, scores, pa, pb, int(cfg.get("min_val_rows", MIN_VAL_ROWS_FLOOR)), attempt
     )
@@ -938,7 +951,7 @@ def cmd_replay(p: dict[str, Path], skill_a: str, skill_b: str) -> int:
         **ev,
         "note": "replays each skill's targeting policy on held-out rows against a fixed "
         "reward; prose-only edits replay as a tie (prove those with a live trial). "
-        "Each distinct skill_b tried since the last accept raises the bar (attempt).",
+        "Each look since the last accept (new skill_b, or new val data) raises the bar.",
     }
     print(json.dumps(out, indent=2))
     return 0
