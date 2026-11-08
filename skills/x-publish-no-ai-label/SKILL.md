@@ -10,8 +10,15 @@ Use this whenever shipping any X original OR reply for @YOUR_HANDLE.
 
 ## Hard ban
 
-NEVER publish through a bot browser on x.com (compose or reply). That path
-can auto-label Made with AI even with disclosure OFF.
+NEVER publish through a bot browser on x.com (compose or reply). X's
+automation rules ban scripting the X website and may permanently suspend
+the account for it. Community reports also tie bot-browser compose to
+auto-applied Made with AI labels (no official doc; treat as a report).
+
+## Disclosure
+
+`made_with_ai` is the operator's choice: set `X_MADE_WITH_AI=true` in
+.env to disclose. Default is off. Never flip it secretly either way.
 
 ## Originals
 
@@ -21,10 +28,11 @@ Typefully API: social set `YOUR_TYPEFULLY_SOCIAL_SET_ID`,
 ## Replies / comments
 
 1. CREATE a draft via Typefully API with `platforms.x.settings.reply_to_url`
-   and `made_with_ai: false`. Do NOT set `publish_at`. X policy blocks API
-   reply publish.
+   and the operator's `made_with_ai` choice. Do NOT set `publish_at`. X
+   policy blocks API reply publish.
 2. PUBLISH that draft from the Typefully UI (open the draft private URL,
-   then Publish). OAuth path, no AI badge.
+   read it once more, then Publish). That human click is the approval step;
+   OAuth path; never schedule.
 3. NEVER use x.com reply compose from a bot browser.
 
 ## Engagement on x.com from a bot browser
@@ -41,5 +49,6 @@ Likes and bookmarks only. No compose.
 
 ## If the AI label appears
 
-Delete that post/reply immediately. Stop that lane. Fix the path before
-the next ship.
+Stop that publish path immediately (suspension risk beats reach). Keep or
+delete the labeled post is the operator's call. Fix the path before the
+next ship.

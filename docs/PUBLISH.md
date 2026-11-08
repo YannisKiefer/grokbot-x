@@ -2,14 +2,26 @@
 
 Read this once. Then never compose on x.com from a bot browser again.
 
-## Why the AI label shows up
+## Why API-only
 
-Grok Bot / Playwright / any datacenter browser posting through x.com
-compose can get **Made with AI** stamped after publish. Disclosure OFF
-does not save you. The session looks automated.
+Two reasons, one proven, one reported:
 
-Official OAuth clients (Typefully connected to @YOUR_HANDLE on the
-operator's own device) do not carry that fingerprint. That is the path.
+1. Official rule (this is why the path exists): X's automation rules ban
+   non-API automation, "such as scripting the X website", and say it may
+   result in permanent suspension. See
+   https://help.x.com/en/rules-and-policies/x-automation.
+2. Community-reported: users have seen **Made with AI** stamped on posts
+   composed from bot browsers (headless, Playwright, datacenter IPs) even
+   with disclosure off. There is no official X documentation of that
+   fingerprinting; treat it as a report, not a rule. Officially, the
+   label targets AI-generated media via composer disclosure and automatic
+   detection of AI images/video.
+
+Publish only through official OAuth clients (Typefully connected to
+@YOUR_HANDLE on the operator's own device), or the operator's own
+phone/laptop. Whether a post carries the "Made with AI" disclosure is the
+operator's choice: set `X_MADE_WITH_AI=true` in `.env` to disclose
+(default is off).
 
 ## One-time setup
 
@@ -25,6 +37,8 @@ YOUR_HANDLE
 ```
 
 `YOUR_SOCIAL_SET_ID` is the same value. Docs use both names.
+Optional: `X_MADE_WITH_AI=true` if you want posts to carry the AI
+disclosure. Default is off; it is your call.
 
 ## Originals: API can publish now
 
@@ -56,7 +70,8 @@ Helper: `python3 scripts/publish_original.py --text "your copy here"`
 
 X does not let the Typefully API publish a reply. Create the draft with
 `reply_to_url` and **omit** `publish_at`. Then open the draft in the
-Typefully UI and hit Publish NOW. Do not schedule replies.
+Typefully UI, read it once more, and hit Publish NOW. That click is the
+human approval X's automation rules expect; do not schedule replies.
 
 ```bash
 curl -sS -X POST \
@@ -100,5 +115,7 @@ Do not invent a second publish path to "keep shipping".
 
 ## If the AI label appears
 
-Delete the post. Stop that lane. Check the payload. Do not test-spam
-to debug.
+The label means the session looked automated. Stop that publish path
+(permanent-suspension risk beats any reach), figure out which client
+produced it, and stay on official clients. Keeping or deleting the post
+is the operator's call. Do not test-spam to debug.
