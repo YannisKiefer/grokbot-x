@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>grokbot-x: open-source X growth loop for Grok Bot</title>
-<meta name="description" content="Scouts the gold, drafts in your voice, waits for your yes, and every night SkillOpt keeps only what worked. MIT, Python stdlib only.">
+<title>grokbot-x by EcomBrain: open-source X growth agent for Grok Bot</title>
+<meta name="description" content="EcomBrain's open-source Grok Bot agent for X. Scouts the gold, drafts in your voice, waits for your yes, and every night SkillOpt keeps only what worked. MIT, Python stdlib only.">
 <meta name="theme-color" content="#F4F5F7">
 <link rel="canonical" href="https://yanniskiefer.github.io/grokbot-x/">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="grokbot-x">
-<meta property="og:title" content="grokbot-x: scouts the gold, drafts in your voice, waits for your yes">
-<meta property="og:description" content="Open-source X growth loop for Grok Bot. Every night SkillOpt keeps only what worked. MIT, Python stdlib only.">
+<meta property="og:site_name" content="grokbot-x by EcomBrain">
+<meta property="og:title" content="EcomBrain's grokbot-x: scouts the gold, drafts in your voice, waits for your yes">
+<meta property="og:description" content="Open-source X growth agent for Grok Bot, from the team behind EcomBrain. Every night SkillOpt keeps only what worked. MIT, Python stdlib only.">
 <meta property="og:url" content="https://yanniskiefer.github.io/grokbot-x/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="grokbot-x: scouts the gold, drafts in your voice, waits for your yes">
-<meta name="twitter:description" content="Open-source X growth loop for Grok Bot. Every night SkillOpt keeps only what worked.">
+<meta name="twitter:title" content="EcomBrain's grokbot-x: scouts the gold, drafts in your voice, waits for your yes">
+<meta name="twitter:description" content="Open-source X growth agent for Grok Bot, from the team behind EcomBrain. Every night SkillOpt keeps only what worked.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D1D1F'/%3E%3Ctext x='32' y='46' font-family='Arial,Helvetica,sans-serif' font-size='42' font-weight='700' text-anchor='middle' fill='%23F4F5F7'%3Ex%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,6 +88,8 @@ pre{margin:0;padding:16px 20px 20px;font:12.5px/1.65 var(--mono);color:var(--ink
 .si{color:var(--ink)}
 .count{font:600 13.5px/1 var(--sans);font-variant-numeric:tabular-nums;color:var(--ink-2);background:var(--secondary);border-radius:999px;padding:5px 10px}
 .count:empty{display:none}
+.brand{align-self:center;display:inline-flex;align-items:center;gap:9px;padding:5px 16px 5px 5px;border-radius:999px;font:600 15px/1 var(--sans);letter-spacing:-.01em;color:var(--ink);text-decoration:none}
+.brand img{border-radius:50%;display:block}
 .credit{margin:26px 0 0;text-align:center;font-size:13px;color:var(--ink-2)}
 .credit a{color:var(--ink);text-underline-offset:3px;text-decoration-color:var(--border)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
@@ -111,8 +113,9 @@ pre{margin:0;padding:16px 20px 20px;font:12.5px/1.65 var(--mono);color:var(--ink
 <body>
 <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
 <main>
+  <a class="brand glass" href="https://ecombrain.io/?utm_source=github&amp;utm_medium=grokbot-x&amp;utm_campaign=oss&amp;utm_content=site-top"><img src="ecombrain-mark.png" width="28" height="28" alt=""> EcomBrain</a>
   <div class="stage">
-    <h1><span class="sr">grokbot-x scouts the gold, drafts in your voice, waits for your yes, and every night SkillOpt keeps only what worked.</span><span id="line" aria-hidden="true"></span></h1>
+    <h1><span class="sr">EcomBrain's grokbot-x scouts the gold, drafts in your voice, waits for your yes, and every night SkillOpt keeps only what worked.</span><span id="line" aria-hidden="true"></span></h1>
   </div>
 
   <section class="use" aria-label="Get started">
@@ -148,14 +151,14 @@ pre{margin:0;padding:16px 20px 20px;font:12.5px/1.65 var(--mono);color:var(--ink
     </div>
   </section>
 
-  <p class="credit">Built by the team behind <a href="https://ecombrain.io/?utm_source=github&amp;utm_medium=grokbot-x&amp;utm_campaign=oss">EcomBrain</a>. Not affiliated with xAI or X.</p>
+  <p class="credit">We built grokbot-x to grow <a href="https://ecombrain.io/?utm_source=github&amp;utm_medium=grokbot-x&amp;utm_campaign=oss&amp;utm_content=site-footer">EcomBrain</a>, the AI operator for online stores. Not affiliated with xAI or X.</p>
 </main>
 
 <script>
 (function(){
   "use strict";
   // t: text, s: glass chip tint (y|g|b), p: trailing punctuation
-  var T=[{t:"grokbot-x"},{t:"scouts"},{t:"the"},{t:"gold",s:"y",p:","},
+  var T=[{t:"EcomBrain's"},{t:"grokbot-x"},{t:"scouts"},{t:"the"},{t:"gold",s:"y",p:","},
     {t:"drafts"},{t:"in"},{t:"your voice",s:"g",p:","},
     {t:"waits"},{t:"for"},{t:"your"},{t:"yes,"},{t:"and"},{t:"every"},{t:"night"},
     {t:"SkillOpt",s:"b"},{t:"keeps"},{t:"only"},{t:"what"},{t:"worked."}];
