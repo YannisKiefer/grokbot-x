@@ -48,26 +48,26 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--focus);outline-offs
 
 /* headline */
 .stage{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:28px 0 36px}
-h1{margin:0;font-weight:700;font-size:clamp(2.45rem,7vw,6.3rem);line-height:1.04;letter-spacing:-.045em;word-spacing:.04em;max-width:17ch;margin-inline:auto}
+h1{margin:0;font-weight:700;font-size:clamp(2rem,5vw,4.25rem);line-height:1.2;letter-spacing:-.04em;word-spacing:.03em;max-width:19ch;margin-inline:auto}
 .w{display:inline-block;opacity:0;will-change:transform,opacity,filter}
 .w.on{opacity:1}
 .pu{margin-left:-.12em}
 .nw{white-space:nowrap}
 .w.in{animation:land .62s cubic-bezier(.16,1,.3,1) both}
-.chip{position:relative;display:inline-block;padding:.02em .2em .06em;margin:0 .02em;border-radius:.24em;
+.chip{position:relative;display:inline-block;padding:0 .16em .02em;margin:0 .02em;border-radius:.2em;
   background:var(--tint);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 0 0 1px rgba(255,255,255,.55),0 .12em .4em -.14em var(--glow);
   -webkit-backdrop-filter:blur(14px) saturate(170%);backdrop-filter:blur(14px) saturate(170%);overflow:hidden}
 .chip.y{--tint:rgba(245,245,245,.72);--glow:rgba(0,0,0,.16)}
 .chip.g{--tint:rgba(245,245,245,.72);--glow:rgba(0,0,0,.16)}
 .chip.b{--tint:rgba(23,23,23,.9);--glow:rgba(0,0,0,.4);color:var(--primary-foreground)}
 .chip.shine::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.55) 48%,transparent 62%);transform:translateX(-120%);animation:shine 3.6s cubic-bezier(.4,0,.2,1) .6s infinite}
-.chip.lg{display:inline-flex;align-items:center;gap:.14em;padding:.05em .24em .09em .14em;border-radius:.34em;color:var(--ink);text-decoration:none;vertical-align:baseline;
+.chip.lg{display:inline-flex;align-items:center;gap:.12em;padding:0 .18em .02em .08em;border-radius:.2em;color:var(--ink);text-decoration:none;vertical-align:baseline;
   background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(255,255,255,.38));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(0,0,0,.05),inset 0 0 0 1px rgba(255,255,255,.65),0 .06em .2em -.06em rgba(0,0,0,.16),0 .3em .9em -.32em rgba(0,0,0,.28);
   -webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%)}
 .chip.lg::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(120% 70% at 20% 0%,rgba(255,255,255,.7),transparent 55%)}
-.chip.lg img{position:relative;width:.86em;height:.86em;display:block;border-radius:50%}
-.chip.lg .wm{position:relative;top:.04em;font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:1.08em;letter-spacing:-.02em;line-height:1}
+.chip.lg img{position:relative;width:.78em;height:.78em;display:block;border-radius:50%}
+.chip.lg .wm{position:relative;top:.04em;font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:1.04em;letter-spacing:-.01em;line-height:1.1}
 .out{animation:out .42s cubic-bezier(.4,0,1,1) both}
 @keyframes land{0%{opacity:0;transform:translateY(.18em);filter:blur(10px)}100%{opacity:1;transform:none;filter:blur(0)}}
 @keyframes out{0%{opacity:1;filter:blur(0)}100%{opacity:0;transform:translateY(-.12em);filter:blur(10px)}}
@@ -119,7 +119,7 @@ pre{margin:0;padding:16px 20px 20px;font:12.5px/1.65 var(--mono);color:var(--ink
 <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
 <main>
   <div class="stage">
-    <h1><span class="sr">EcomBrain's grokbot-x scouts the gold, drafts in your voice, waits for your yes, and every night SkillOpt keeps only what worked.</span><span id="line" aria-hidden="true"></span></h1>
+    <h1><span class="sr">EcomBrain grokbot-x scouts the gold, drafts in your voice, waits for your yes, and every night SkillOpt keeps only what worked.</span><span id="line" aria-hidden="true"></span></h1>
   </div>
 
   <section class="use" aria-label="Get started">
@@ -162,7 +162,7 @@ pre{margin:0;padding:16px 20px 20px;font:12.5px/1.65 var(--mono);color:var(--ink
 (function(){
   "use strict";
   // t: text, s: glass chip tint (y|g|b), p: trailing punctuation
-  var T=[{t:"EcomBrain",s:"lg",p:"'s",brand:1},{t:"grokbot-x"},{t:"scouts"},{t:"the"},{t:"gold",s:"y",p:","},
+  var T=[{t:"EcomBrain",s:"lg",brand:1},{t:"grokbot-x"},{t:"scouts"},{t:"the"},{t:"gold",s:"y",p:","},
     {t:"drafts"},{t:"in"},{t:"your voice",s:"g",p:","},
     {t:"waits"},{t:"for"},{t:"your"},{t:"yes,"},{t:"and"},{t:"every"},{t:"night"},
     {t:"SkillOpt",s:"b"},{t:"keeps"},{t:"only"},{t:"what"},{t:"worked."}];
