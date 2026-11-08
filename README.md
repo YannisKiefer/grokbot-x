@@ -1,30 +1,50 @@
+<div align="center">
+
+<a href="https://yanniskiefer.github.io/grokbot-x/"><img src="docs/brand/hero.png" alt="EcomBrain's grokbot-x scouts the gold, drafts in your voice, waits for your yes, and every night SkillOpt keeps only what worked." width="100%"></a>
+
 # grokbot-x
 
-[![CI](https://github.com/YannisKiefer/grokbot-x/actions/workflows/ci.yml/badge.svg)](https://github.com/YannisKiefer/grokbot-x/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+**The self-learning X growth agent for Grok Bot.**<br>
+Open source from [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-top), the AI operator for online stores.
 
-**Self-learning X/Twitter growth system for Grok Bot.**
+[![GitHub stars](https://img.shields.io/github/stars/YannisKiefer/grokbot-x?style=flat&color=171717)](https://github.com/YannisKiefer/grokbot-x/stargazers)
+[![CI](https://github.com/YannisKiefer/grokbot-x/actions/workflows/ci.yml/badge.svg)](https://github.com/YannisKiefer/grokbot-x/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-171717)](pyproject.toml)
+[![Zero dependencies](https://img.shields.io/badge/dependencies-0-171717)](#development)
+[![License: MIT](https://img.shields.io/badge/license-MIT-171717)](LICENSE)
+
+[Website](https://yanniskiefer.github.io/grokbot-x/) &nbsp;|&nbsp; [Quickstart](#quickstart-5-minutes-clean-machine) &nbsp;|&nbsp; [Operator guide](docs/OPERATOR.md) &nbsp;|&nbsp; [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-nav)
+
+</div>
 
 Most X agent repos give you a prompt pack that spams compose and hopes.
-This is the other thing: scout posts that actually move, draft like a
-human, publish through the official Typefully API, log every ship as a
+This is the other thing: scout posts that actually move, draft in your
+voice, publish through the official Typefully API, log every ship as a
 trajectory, and let a nightly gate rewrite the playbook only when the
-numbers prove the edit helped. No runtime dependencies. Python 3.10+
-stdlib only.
+numbers prove the edit helped. Built for tired founders. Dumbed down on purpose.
 
-Built for tired founders. Dumbed down on purpose.
+## Why you can trust it
+
+| | |
+|---|---|
+| **You approve every reply** | Replies land as Typefully drafts. Nothing reaches X until you click Publish. |
+| **Official API only** | Typefully's API. No scripted browser on x.com, no auto-likes, no auto-follows. |
+| **Proof before change** | A skill edit is kept only if held-out data shows it does better. Everything else is logged as rejected. |
+| **Small and readable** | Python 3.10+ standard library, zero runtime dependencies, tested in CI on 3.10 and 3.14. |
+| **Yours** | MIT license. Your logs stay on your machine. AI disclosure is your setting (`X_MADE_WITH_AI`). |
+
+> **Built by EcomBrain.** We built grokbot-x to grow [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-callout) on X, and we open-sourced it because the loop works for any niche.
+> If you run an online store, EcomBrain is the AI operator for it: you talk to it, and it does the work across your store's apps. [See what it does](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-callout-cta).
 
 ## How it works
 
-```mermaid
-flowchart LR
-  A[Scout gold<br>views >> followers] --> B[Draft unslop<br>hook > proof > body]
-  B --> C[Typefully publish<br>official API]
-  C --> D[Log trajectory<br>one JSON line]
-  D --> E[Nightly gate<br>bootstrap 90% CI]
-  E -->|proven better| F[best_skill.md]
-  E -->|noise or worse| G[rejected_edits.md]
-```
+| Step | What happens |
+|---|---|
+| 1. Scout | Find posts with views far above the author's follower count: the gold. |
+| 2. Draft | Write the reply or post in your voice: hook, proof, body. |
+| 3. Approve | It lands in Typefully. You read it and publish. |
+| 4. Log | Each shipped post becomes one JSON line with its results. |
+| 5. Learn | Every night SkillOpt tests one skill edit on held-out data and keeps it only if it wins. |
 
 Two lanes, never mixed:
 
@@ -125,6 +145,12 @@ pytest
 
 Contributing: `CONTRIBUTING.md`. Security: `SECURITY.md`.
 Changelog: `CHANGELOG.md`.
+
+## Built by EcomBrain
+
+grokbot-x is how we grow [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-footer) on X.
+EcomBrain is the AI operator for online stores: you talk to it, it does
+the work across your apps. If you run a store, take a look.
 
 ## License
 
