@@ -2,17 +2,27 @@
 """Create a Typefully reply draft. Do not set publish_at.
 
 X blocks API reply publish. Open the returned private URL in the
-Typefully UI and hit Publish NOW. made_with_ai stays false.
+Typefully UI, read the reply once more, and hit Publish NOW: that human
+click is the approval step required by X's automation rules. made_with_ai
+is the operator's choice (X_MADE_WITH_AI=true to disclose), default off.
+
+Exit codes: 0 ok, 1 API or network error, 2 bad input.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
+
+X_CHAR_LIMIT = 280
+REPLY_URL_RE = re.compile(
+    r"^https?://(www\.)?(x|twitter)\.com/(?P<user>[A-Za-z0-9_]{1,15})/status/(?P<id>\d+)/?$"
+)
 
 
 def load_dotenv(path: Path) -> None:
@@ -20,6 +30,8 @@ def load_dotenv(path: Path) -> None:
         return
     for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
+        if line.startswith("export "):
+            line = line[len("export "):]
         if not line or line.startswith("#") or "=" not in line:
             continue
         k, _, v = line.partition("=")
@@ -30,9 +42,37 @@ def load_dotenv(path: Path) -> None:
 def require(name: str) -> str:
     val = (os.environ.get(name) or "").strip()
     if not val or val.startswith("YOUR_"):
-        print(f"missing or placeholder env: {name}", file=sys.stderr)
+        print(
+            f"error: missing or placeholder env {name}; copy .env.example to .env "
+            "and fill it (Typefully Settings -> API)",
+            file=sys.stderr,
+        )
         sys.exit(2)
     return val
+
+
+def made_with_ai() -> bool:
+    return (os.environ.get("X_MADE_WITH_AI", "").strip().lower()) in ("1", "true", "yes")
+
+
+def validate_inputs(text: str, reply_to: str) -> None:
+    if not text.strip():
+        print("error: --text is empty; refusing to draft an empty reply", file=sys.stderr)
+        sys.exit(2)
+    if len(text) > X_CHAR_LIMIT:
+        print(
+            f"error: --text is {len(text)} chars; X standard limit is {X_CHAR_LIMIT}. "
+            "Trim the reply; long replies under a parent read like essays.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    if not REPLY_URL_RE.match(reply_to.strip()):
+        print(
+            f"error: --reply-to is not an X post URL: {reply_to!r}. "
+            "Expected https://x.com/<user>/status/<numbers>",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
 
 def main() -> int:
@@ -42,10 +82,14 @@ def main() -> int:
     parser.add_argument("--reply-to", required=True, help="parent tweet URL")
     args = parser.parse_args()
 
+    validate_inputs(args.text, args.reply_to)
     key = require("YOUR_TYPEFULLY_API_KEY")
     sid = os.environ.get("YOUR_TYPEFULLY_SOCIAL_SET_ID") or os.environ.get("YOUR_SOCIAL_SET_ID")
     if not sid or str(sid).startswith("YOUR_"):
-        print("missing YOUR_TYPEFULLY_SOCIAL_SET_ID", file=sys.stderr)
+        print(
+            "error: missing YOUR_TYPEFULLY_SOCIAL_SET_ID (Typefully -> Development mode)",
+            file=sys.stderr,
+        )
         return 2
 
     payload = {
@@ -54,8 +98,8 @@ def main() -> int:
                 "enabled": True,
                 "posts": [{"text": args.text}],
                 "settings": {
-                    "made_with_ai": False,
-                    "reply_to_url": args.reply_to,
+                    "made_with_ai": made_with_ai(),
+                    "reply_to_url": args.reply_to.strip(),
                 },
             }
         }
@@ -73,15 +117,30 @@ def main() -> int:
         with urllib.request.urlopen(req, timeout=60) as resp:
             created = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        print(f"Typefully HTTP {e.code}: {e.read().decode('utf-8', errors='replace')}", file=sys.stderr)
+        print(
+            f"error: Typefully HTTP {e.code}: {e.read().decode('utf-8', errors='replace')}",
+            file=sys.stderr,
+        )
+        return 1
+    except urllib.error.URLError as e:
+        print(f"error: cannot reach Typefully ({e.reason}); check your connection", file=sys.stderr)
         return 1
 
+    private_url = created.get("private_url") or created.get("url")
+    if not private_url:
+        print(
+            "error: Typefully response has no draft URL; keys: "
+            + ", ".join(sorted(created.keys())),
+            file=sys.stderr,
+        )
+        return 1
     print(
         json.dumps(
             {
                 "draft_id": created.get("id"),
-                "private_url": created.get("private_url") or created.get("url"),
-                "next": "Open private_url in Typefully UI and Publish NOW. Do not schedule.",
+                "private_url": private_url,
+                "next": "Open private_url, read the reply once more, then Publish NOW by hand. "
+                "That click is the human approval; do not schedule.",
             },
             indent=2,
         )

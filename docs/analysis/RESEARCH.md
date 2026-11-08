@@ -258,6 +258,11 @@ follow graph - and a reply under it reaches non-followers. Caveats: it conflates
 recency, embed traffic, repeat views, and follower-growth timing; X documents none
 of it. Treat it as a scout filter, not an official signal.
 
+Newer community-extracted weight tables (2026 update, e.g. like 0.66 -> 0.708,
+share 2 -> 2.118, video-open 0.02 -> 0, "not interested" -52.272 -> -53.07) keep
+the same shape: conversation and dwell signals outweigh likes, negatives dwarf
+positives. `docs/x-post-guide.md` turns that table into writing rules.
+
 For grokbot-x: keep the gold filter. Change (Phase 5): the scorer's reply bonus
 (already x1.35/x1.15 on 20x/12x parents) is directionally right per these weights;
 add the author-reply x1.5 it already has is consistent with the "reply answered by

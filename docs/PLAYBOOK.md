@@ -43,6 +43,9 @@ Load `skills/x-unslop-humanizer`. Write the reply or original.
 Run the spoken test. Kill em dashes. Kill "the X is the real story".
 Name a real object (checkout, refund, pixel, sku).
 
+Structure per `x-post-guide.md`: clear hook > useful body > real proof >
+cut the filler. Line 1 says what the reader gets. Line 2 proves it.
+
 Replies: add the missing next step. Do not plug YOUR_PRODUCT unless
 you earned it.
 

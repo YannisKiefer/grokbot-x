@@ -130,6 +130,7 @@ python3 scripts/create_reply_draft.py --text "your reply" --reply-to URL
 ```
 docs/PLAYBOOK.md                 start here
 docs/PUBLISH.md                  Typefully originals vs replies
+docs/x-post-guide.md             writing posts for the current algo weights
 docs/SKILLOPT.md                 nightly gate
 docs/BRAND-BIBLE.template.md     fill-in product doctrine
 docs/OPERATOR.md                 generic operator rules
