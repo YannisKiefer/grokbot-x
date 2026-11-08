@@ -105,17 +105,11 @@ pre{margin:0;padding:16px 18px 18px;font:12.5px/1.6 var(--mono);color:#1A1A18;wh
 @media (prefers-reduced-motion:reduce){
   .w{opacity:1}
   .in,.out,.glitch,.c{animation:none!important}
-  #motion{display:none}
 }
 </style>
 </head>
 <body>
 <main>
-  <div class="top">
-    <span><b>grokbot-x</b> &middot; MIT<span class="sm-hide"> &middot; Python 3.10+, stdlib only</span></span>
-    <button class="ghost" id="motion" type="button" aria-pressed="false">Pause motion</button>
-  </div>
-
   <div class="stage">
     <h1><span class="sr">grokbot-x scouts the gold, drafts in your voice, waits for your yes, and every night SkillOpt keeps only what worked.</span><span id="line" aria-hidden="true"></span></h1>
   </div>
@@ -165,7 +159,7 @@ pre{margin:0;padding:16px 18px 18px;font:12.5px/1.6 var(--mono);color:#1A1A18;wh
     {t:"drafts"},{t:"in"},{t:"your voice",s:"g",r:3,p:","},
     {t:"waits"},{t:"for"},{t:"your"},{t:"yes,"},{t:"and"},{t:"every"},{t:"night"},
     {t:"SkillOpt",s:"b",r:-3},{t:"keeps"},{t:"only"},{t:"what"},{t:"worked."}];
-  var line=document.getElementById("line"), btn=document.getElementById("motion");
+  var line=document.getElementById("line");
   var reduce=window.matchMedia("(prefers-reduced-motion: reduce)");
   var CONF=["#FF2D55","#00D8F0","#FFD400","#19D27C","#2B3BFF","#000"];
   var els=[], timers=[], loops=0, state="play";
@@ -216,7 +210,7 @@ pre{margin:0;padding:16px 18px 18px;font:12.5px/1.6 var(--mono);color:#1A1A18;wh
     });
     later(glitchLoop,t+500);
     loops++;
-    if(loops>=3){ later(function(){ clear(); setAll(true); btn.textContent="Replay motion"; btn.setAttribute("aria-pressed","false"); state="done"; },t+2600); return; }
+    if(loops>=3){ later(function(){ clear(); setAll(true); state="done"; },t+2600); return; }
     later(dissolve,t+2600);
   }
   function dissolve(){
@@ -226,9 +220,8 @@ pre{margin:0;padding:16px 18px 18px;font:12.5px/1.6 var(--mono);color:#1A1A18;wh
     });
     later(function(){ clear(); setAll(false); later(build,250); }, order.length*28+420);
   }
-  function play(){ clear(); setAll(false); loops=0; state="play"; btn.textContent="Pause motion"; btn.setAttribute("aria-pressed","false"); later(build,350); }
-  function pause(){ clear(); setAll(true); state="paused"; btn.textContent="Play motion"; btn.setAttribute("aria-pressed","true"); }
-  btn.addEventListener("click",function(){ state==="play" ? pause() : play(); });
+  function play(){ clear(); setAll(false); loops=0; state="play"; later(build,350); }
+  function pause(){ clear(); setAll(true); state="paused"; }
 
   if(reduce.matches){ setAll(true); } else { play(); }
   reduce.addEventListener && reduce.addEventListener("change",function(e){ if(e.matches) pause(); });
