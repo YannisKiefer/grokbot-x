@@ -2,18 +2,21 @@
 name: X unslop humanizer
 description: >-
   use this when writing or rewriting any X/Twitter post, reply, or thread for
-  the operator so copy sounds human and X-native, never AI
+  the operator: writing-quality rules so copy is specific, X-native and free
+  of filler cliches
 ---
 # X unslop humanizer
 
 Use this skill before shipping ANY X post, reply, or thread for @YOUR_HANDLE.
+These are quality rules, not a way to hide anything: AI disclosure is the
+operator's own setting (see `skills/x-publish`).
 
 ## Voice
 
 Direct. Specific. Slightly non-native English is fine. Operator blunt.
 Phone-typed. Allowed: imo.
 Not: founder Twitter cosplay, fake US bro slang (tbh/ngl/lowkey/fr),
-LinkedIn-GPT, "AI trying to sound human".
+LinkedIn-GPT, forced casual filler.
 
 ## Hard bans
 

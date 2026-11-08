@@ -24,7 +24,7 @@ $clear
 @4
 $clear
 # type: echo 'gate receipt example'
-@$echo '{"accepted": true, "val_mean_before": 1.83, "val_mean_after": 2.04, "delta_mean": 0.21, "ci90_low": 0.06, "ci90_high": 0.41}'
+@$echo '{"accepted": true, "val_mean_before": 1.83, "val_mean_after": 2.04, "delta_mean": 0.21, "ci_level": 0.95, "ci_low": 0.06, "ci_high": 0.41}'
 @5
 EOS
 asciinema rec --overwrite --command "bash --norc --noprofile" -c /tmp/demo-script /tmp/demo.cast

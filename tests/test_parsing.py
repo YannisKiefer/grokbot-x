@@ -208,3 +208,11 @@ def test_status_ready_counts_scored_rows_only(sc, root, capsys):
     out = json.loads(capsys.readouterr().out)
     assert out["n_scored"] == 3
     assert out["ready_for_edit"] is False
+
+
+def test_non_numeric_followers_rejected(sc, root, capsys):
+    row = make_row("a")
+    row["features"]["author_followers"] = "1,200"
+    write_root(root, [row])
+    assert sc.main(["--root", str(root), "status"]) == 2
+    assert "author_followers" in capsys.readouterr().err

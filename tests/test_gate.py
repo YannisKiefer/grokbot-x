@@ -53,7 +53,7 @@ def test_replay_accepts_a_better_targeting_rule(sc, root):
     assert rec["accepted"] is True
     assert rec["method"] == "replay"
     assert (rec["n_a"], rec["n_b"]) == (10, 6)
-    assert rec["ci90_low"] > 0
+    assert rec["ci_low"] > 0
     assert (root / "best_skill.md").read_text(encoding="utf-8") == GOLD_ONLY
 
 
@@ -149,7 +149,7 @@ def test_noisy_improvement_with_ci_across_zero_is_rejected(sc, root):
     gate(sc, root, proposed)
     rec = json.loads(receipts(root)[0].read_text())
     assert rec["delta_mean"] > 0
-    assert rec["ci90_low"] <= 0 < rec["ci90_high"]
+    assert rec["ci_low"] <= 0 < rec["ci_high"]
     assert rec["accepted"] is False
 
 
@@ -243,7 +243,7 @@ def test_gate_receipt_logs_before_after_and_interval(sc, root):
     proposed.write_text(GOLD_ONLY, encoding="utf-8")
     gate(sc, root, proposed, "--edit", "DO: reply only under >=12x parents")
     rec = json.loads(receipts(root)[0].read_text())
-    for key in ("val_mean_before", "val_mean_after", "delta_mean", "ci90_low", "ci90_high",
+    for key in ("val_mean_before", "val_mean_after", "delta_mean", "ci_low", "ci_high",
                 "score_version", "skill_before_sha256", "skill_after_sha256", "n_val_scored",
                 "n_a", "n_b", "method", "verdict", "edits", "rule", "ts"):
         assert key in rec, f"receipt missing {key}"
@@ -268,3 +268,149 @@ def test_gate_missing_proposed_file_is_clean_error(sc, root, capsys):
     rc = gate(sc, root, root / "nope.md")
     assert rc == 2
     assert "error:" in capsys.readouterr().err
+
+
+def test_each_new_proposal_raises_the_bar(sc, root):
+    write_root(root, val_rows(), best_skill=NO_POLICY)
+    for i, text in enumerate(("p1", "p2", "p2")):
+        f = root / f"try{i}.md"
+        policy = '<!-- skillopt-policy {"min_parent_ratio": 30} -->'
+        f.write_text(f"{text}\n{policy}", encoding="utf-8")
+        gate(sc, root, f)
+    recs = [json.loads(r.read_text()) for r in receipts(root)]
+    # the same file tried twice is one attempt, not two
+    assert sorted(r["attempt"] for r in recs) == [1, 2, 2]
+    assert min(r["ci_level"] for r in recs) == 0.95
+
+
+def test_accept_resets_the_attempt_count(sc, root):
+    write_root(root, val_rows(), best_skill=NO_POLICY)
+    bad = root / "bad.md"
+    bad.write_text('<!-- skillopt-policy {"min_parent_ratio": 30} -->', encoding="utf-8")
+    gate(sc, root, bad)
+    good = root / "good.md"
+    good.write_text(GOLD_ONLY, encoding="utf-8")
+    gate(sc, root, good)  # attempt 2, accepted
+    nxt = root / "next.md"
+    nxt.write_text(GOLD_ONLY_SAME_ROWS, encoding="utf-8")
+    gate(sc, root, nxt)
+    recs = sorted((json.loads(r.read_text()) for r in receipts(root)), key=lambda r: r["attempt"])
+    assert [r["accepted"] for r in recs if r["attempt"] == 2] == [True]
+    assert sum(1 for r in recs if r["attempt"] == 1) == 2  # bad.md, then next.md after reset
+
+
+def test_replay_counts_as_an_attempt(sc, root, capsys):
+    write_root(root, val_rows(), best_skill=NO_POLICY)
+    peek = root / "peek.md"
+    peek.write_text('<!-- skillopt-policy {"topics": ["ads"]} -->', encoding="utf-8")
+    sc.main(["--root", str(root), "replay", "--skill-a", str(root / "best_skill.md"),
+             "--skill-b", str(peek)])
+    capsys.readouterr()
+    proposed = root / "proposed.md"
+    proposed.write_text(GOLD_ONLY, encoding="utf-8")
+    gate(sc, root, proposed)
+    assert json.loads(receipts(root)[0].read_text())["attempt"] == 2
+
+
+def trial_rows(a_views, b_views, a_ts="2026-09-02T10:00:00Z", b_ts="2026-09-01T10:00:00Z",
+               split="val", proposed="rewritten hooks\n"):
+    rows = []
+    for i, v in enumerate(a_views):
+        r = make_row(f"va{i}", views=v, split="val", text=f"old skill post {i} ads")
+        r["skill_sha256"], r["ts"] = sha(NO_POLICY), a_ts
+        rows.append(r)
+    for i, v in enumerate(b_views):
+        r = make_row(f"vb{i}", views=v, split=split, text=f"new skill post {i} ops")
+        r["skill_sha256"], r["ts"] = sha(proposed), b_ts
+        rows.append(r)
+    return rows
+
+
+def test_live_trial_rejects_a_worse_prose_edit(sc, root):
+    write_root(root, trial_rows([3000 + i for i in range(6)], [300 + i for i in range(6)]),
+               best_skill=NO_POLICY)
+    proposed = root / "proposed.md"
+    proposed.write_text("rewritten hooks\n", encoding="utf-8")
+    gate(sc, root, proposed)
+    rec = json.loads(receipts(root)[0].read_text())
+    assert rec["method"] == "trial"
+    assert rec["verdict"] == "a" and rec["accepted"] is False
+
+
+def test_trial_ignores_current_skill_rows_from_before_the_trial(sc, root):
+    # weak current-skill rows from months ago must not make the trial look good
+    rows = trial_rows([3000] * 6, [3000] * 6)
+    for i in range(6):
+        r = make_row(f"old{i}", views=10, split="val", text=f"ancient post {i} pdp")
+        r["skill_sha256"], r["ts"] = sha(NO_POLICY), "2026-01-01T00:00:00Z"
+        rows.append(r)
+    write_root(root, rows, best_skill=NO_POLICY)
+    proposed = root / "proposed.md"
+    proposed.write_text("rewritten hooks\n", encoding="utf-8")
+    gate(sc, root, proposed)
+    rec = json.loads(receipts(root)[0].read_text())
+    assert rec["method"] == "trial"
+    assert rec["n_a"] == 6
+    assert rec["accepted"] is False
+
+
+def test_trial_rows_marked_train_are_ignored(sc, root):
+    write_root(root, trial_rows([300] * 6, [3000] * 6, split="train"), best_skill=NO_POLICY)
+    proposed = root / "proposed.md"
+    proposed.write_text("rewritten hooks\n", encoding="utf-8")
+    gate(sc, root, proposed)
+    assert json.loads(receipts(root)[0].read_text())["method"] == "replay"
+
+
+def test_no_current_skill_means_no_trial(sc, root):
+    rows = trial_rows([300] * 6, [3000] * 6)
+    write_root(root, rows)  # no best_skill.md
+    proposed = root / "proposed.md"
+    proposed.write_text("rewritten hooks\n", encoding="utf-8")
+    gate(sc, root, proposed)
+    rec = json.loads(receipts(root)[0].read_text())
+    assert rec["method"] == "replay" and rec["accepted"] is False
+
+
+def test_backup_names_never_collide(sc, root, monkeypatch):
+    import datetime as real_dt
+
+    class Frozen(real_dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return real_dt.datetime(2026, 11, 8, 12, 0, 0, tzinfo=tz)
+
+    monkeypatch.setattr(sc.dt, "datetime", Frozen)
+    write_root(root, val_rows(), best_skill=NO_POLICY)
+    first = root / "first.md"
+    first.write_text(GOLD_ONLY, encoding="utf-8")
+    gate(sc, root, first)
+    second = root / "second.md"
+    second.write_text('x\n<!-- skillopt-policy {"min_parent_ratio": 12, "topics": []} -->\n',
+                      encoding="utf-8")
+    write_root(root, val_rows())
+    (root / "best_skill.md").write_text(NO_POLICY, encoding="utf-8")
+    gate(sc, root, second)
+    backups = sorted((root / "epochs").glob("*_best_before.md"))
+    assert len(backups) == 2
+
+
+def test_learning_rate_from_config_is_enforced(sc, root):
+    write_root(root, val_rows(), cfg={"learning_rate_max_edits": 2}, best_skill=NO_POLICY)
+    argv = ["--root", str(root), "gate", "reject", "--summary", "s",
+            "--edit", "a", "--edit", "b", "--edit", "c"]
+    assert sc.main(argv) == 2
+
+
+def test_min_val_rows_below_floor_rejected(sc, root, capsys):
+    write_root(root, val_rows(), cfg={"min_val_rows": 1})
+    assert sc.main(["--root", str(root), "status"]) == 2
+    assert "min_val_rows" in capsys.readouterr().err
+
+
+def test_rejected_buffer_records_the_verdict(sc, root):
+    write_root(root, val_rows(), best_skill=GOLD_ONLY)
+    proposed = root / "proposed.md"
+    proposed.write_text(GOLD_ONLY_SAME_ROWS, encoding="utf-8")
+    gate(sc, root, proposed)
+    assert "retry only as a live trial" in (root / "rejected_edits.md").read_text()

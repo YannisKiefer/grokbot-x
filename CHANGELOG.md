@@ -13,8 +13,14 @@
 - The nightly gate computes the decision itself on held-out rows only:
   live trial (rows stamped with the proposal's hash via `append --skill`)
   or off-policy replay with a coverage guard; accept only when the
-  bootstrap 90% interval of the gain is above zero. Receipts go to
+  bootstrap interval of the gain is above zero. Receipts go to
   `skillopt/epochs/`, with a copy of the replaced skill.
+- Each distinct proposal tried since the last accept raises the gate's
+  interval level (alpha spending), so many tries on the same val rows
+  cannot find a lucky winner; trials compare against current-skill rows
+  from the same time window; small-sample interval correction;
+  `min_val_rows` >= 5; `learning_rate_max_edits` is enforced; rejected
+  edits record their verdict.
 - New offline replay eval: `python3 skillopt/sleep_cycle.py replay --skill-a A --skill-b B`
   reports which targeting rule wins on held-out rows before anything goes live.
 - `made_with_ai` is the operator's choice (`X_MADE_WITH_AI` env, default off).

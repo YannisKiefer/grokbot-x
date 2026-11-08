@@ -74,7 +74,8 @@ is a plus.
 
 <= 4 bounded edits per night, judged by `sleep_cycle.py gate` on held-out
 rows only (replay for targeting edits, a live trial for prose edits).
-Accept only if the 90% interval of the gain is above zero. Otherwise the
+Accept only if the gain's interval is above zero (stricter with every
+idea tried since the last accept, so propose few, good edits). Otherwise the
 edit goes to `rejected_edits.md` and this file stays.
 
 <!-- skillopt-policy {"min_parent_ratio": 5, "skip_dead_diary": true} -->

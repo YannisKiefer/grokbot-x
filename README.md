@@ -39,8 +39,8 @@ Two lanes, never mixed:
   The reward is fixed in code, so no edit can win by rewriting it. The
   nightly gate judges held-out trajectories only (a live trial of the
   proposed skill, or a replay of its targeting rule), computes a bootstrap
-  90% interval on the improvement, and adopts an edit only if the lower
-  bound is above zero. Everything else lands in `rejected_edits.md`.
+  interval on the improvement (stricter with every idea tried), and adopts
+  an edit only if the lower bound is above zero. Everything else lands in `rejected_edits.md`.
   You can replay two targeting rules offline before touching the live one:
   `python3 skillopt/sleep_cycle.py replay --skill-a A.md --skill-b B.md`.
 
@@ -87,7 +87,7 @@ drafted to Typefully.
 | `docs/PLAYBOOK.md` | start here: the daily loop |
 | `docs/PUBLISH.md` | Typefully originals vs replies, allowed vs forbidden |
 | `docs/x-post-guide.md` | writing posts for the current algo weights |
-| `docs/x-human-cadence.md` | timing, jitter, volume discipline |
+| `docs/x-human-cadence.md` | posting rhythm and volume discipline |
 | `docs/SKILLOPT.md` | the nightly gate, scorer reference |
 | `docs/OPERATOR.md` | voice and targeting rules |
 | `docs/BRAND-BIBLE.template.md` | fill-in product doctrine |

@@ -48,9 +48,18 @@ can change it, so an edit cannot win by rewriting its own reward:
 Targeting features (parent ratio, dead diary, hard open) are not rewarded.
 Where you reply is a choice; the reward only counts what happened.
 
-Follower count comes from each row's `features.author_followers`, else
+Follower count is YOUR account's follower count at ship time (not the
+parent author's): each row's `features.author_followers`, else
 `author_followers` in `held_out.json`. Set one of them: `status` warns
 when rows have neither, because their velocity is not comparable.
+
+Features are frozen at ship time. A metrics refresh updates `metrics`
+only; never rewrite `viral_ratio` or `viral_signal` later, or replay
+would learn from facts you could not know when you replied.
+
+The reward is a mean per post, so a policy that skips weak posts wins
+even if total reach drops. That is intended (quality over volume), but
+watch total views in `status` too.
 
 Rows with no metrics yet are pending, not zero; they do not drag means
 and do not count toward row minimums.
@@ -70,7 +79,7 @@ Known keys, all about which posts to make, none about scoring:
 | `min_parent_ratio` | skip replies whose parent `viral_ratio` is below this (or unknown) |
 | `skip_dead_diary` | skip rows with `viral_signal: weak_dead_diary` |
 | `skip_risky_parents` | skip replies under `parent_risky` parents |
-| `topics` | only post on these topics (rows with another topic are skipped) |
+| `topics` | only post on these topics (rows with another or no topic are skipped) |
 
 Everything else in the file is prose for the bot.
 
@@ -84,8 +93,11 @@ evidence it has:
    `sleep_cycle.py append --skill skillopt/proposed.md --json '{...}'`.
    Log trial rows with `"split": "val"`. Once both the current skill and
    the proposal have at least `min_val_rows` scored val rows, the gate
-   compares the two groups (two-sample bootstrap). Alternate the two
-   skills by day so time effects hit both.
+   compares the proposal's rows with the current skill's rows from the
+   same window (logged at or after the first trial row), two-sample
+   bootstrap. Alternate the two skills by day so time effects hit both,
+   and draft from the file you log (see `skills/x-skillopt-learn`). A
+   trial needs a current `best_skill.md` to compare against.
 2. **Replay** (targeting edits). Each skill's policy block is applied to
    the logged val rows: which rows would it have posted? The gate compares
    the mean reward of the rows each one keeps. A proposal that keeps fewer
@@ -116,14 +128,25 @@ python3 skillopt/sleep_cycle.py gate accept \
 ```
 
 5. The gate refuses to run with too few scored rows (default 8 total,
-   5 val; both configurable in `held_out.json`). Otherwise it accepts only
-   if the mean improves AND the bootstrap 90% interval of the improvement
-   is above zero. The receipt in `skillopt/epochs/` records the method
-   (trial or replay), row counts, means, the interval, the verdict and
+   5 val, never fewer than 5 val; both set in `held_out.json`). Otherwise
+   it accepts only if the mean improves AND the bootstrap interval of the
+   improvement is above zero.
+6. Every look at the val rows is an attempt. Each distinct proposal tried
+   since the last accept (by `gate accept` or `replay`; the same file
+   twice counts once) raises the bar: attempt k needs a
+   `1 - 0.10/(k(k+1))` interval (95%, 98.3%, 99.2%, ...), so all attempts
+   together keep the false-accept rate near 5%. Without this, 20 tries on
+   the same rows accepted a pure-noise edit 76% of the time in simulation;
+   with it, 8% for log-scale rewards like ours. Attempts live in
+   `epochs/attempts.jsonl`; an accept starts a new count.
+7. The receipt in `skillopt/epochs/` records the method (trial or replay),
+   attempt, interval level and bounds, row counts, means, the verdict and
    both file hashes. On accept it saves the old skill as
    `epochs/<ts>_best_before.md` and replaces `best_skill.md` atomically.
-   On reject it appends to `rejected_edits.md`.
-6. Rejecting an edit without proposing one is fine too:
+   On reject it appends to `rejected_edits.md` with the verdict: "proven
+   worse, do not retry", "not proven either way; retry only as a live
+   trial", or "not tested". Read the verdict before skipping an idea.
+8. Rejecting an edit without proposing one is fine too:
 
 ```bash
 python3 skillopt/sleep_cycle.py gate reject \
@@ -139,8 +162,9 @@ python3 skillopt/sleep_cycle.py replay --skill-a skillopt/best_skill.md --skill-
 ```
 
 Reports how many val rows each skill keeps, their means, the delta, the
-90% interval and a verdict. Same replay math as the gate; nothing is
-adopted.
+interval and a verdict. Same replay math as the gate; nothing is adopted,
+but it counts as an attempt (see step 6), so replay ideas you mean to
+gate, not every variation you can think of.
 
 ## Why the controls exist
 
@@ -155,6 +179,8 @@ adopted.
 - **Held-out only, coverage guard:** train rows wrote the edit, so they
   cannot judge it; a policy that keeps 2 lucky rows proves nothing.
 - **Min rows:** a gate over 5 rows is a coin flip with extra steps.
+- **Attempt count:** testing many ideas on the same rows finds a lucky
+  one. The bar rises with each attempt.
 - **Rejected buffer:** the optimizer sees what already failed, so it does
   not loop.
 - **score_version in every receipt:** when the formula changes, old and

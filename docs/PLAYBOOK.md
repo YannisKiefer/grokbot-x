@@ -37,10 +37,10 @@ Throw it away if:
 
 Views beat followers. Always.
 
-## 2. Draft like a human
+## 2. Draft it well
 
-Load `skills/x-unslop-humanizer`. Write the reply or original.
-Run the spoken test. Kill em dashes. Kill "the X is the real story".
+Load `skills/x-unslop-humanizer` (writing-quality rules). Write the reply
+or original. Run the spoken test. Kill em dashes. Kill "the X is the real story".
 Name a real object (checkout, refund, pixel, sku).
 
 Structure per `x-post-guide.md`: clear hook > useful body > real proof >

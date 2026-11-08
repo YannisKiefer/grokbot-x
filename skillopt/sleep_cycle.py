@@ -12,8 +12,10 @@ off-niche topics (niche list in held_out.json) and risky parents. No model
 judges "quality", and no skill edit can change the reward.
 
 The gate is machine-checked on held-out (val) rows only. An edit is
-accepted only if the mean reward improves AND the bootstrap 90% interval of
-the improvement is above zero, with minimum row counts. Two kinds of
+accepted only if the mean reward improves AND the bootstrap interval of the
+improvement is above zero, with minimum row counts. The interval level
+rises with every distinct proposal tried since the last accept (95% for
+the first), so many tries on the same rows cannot find a lucky winner. Two kinds of
 evidence count:
 
 - trial: val rows logged while the proposed skill was live (their
@@ -69,6 +71,12 @@ W_LIKE, W_REPLY, W_BOOKMARK = 0.5, 1.5, 2.0
 DUPLICATE_JACCARD = 0.8
 BOOTSTRAP_RESAMPLES = 10_000
 BOOTSTRAP_LEVEL = 0.90
+# Every distinct proposal tried against the val rows since the last accept
+# is one more chance to win by luck. Alpha spending: attempt k gets
+# 0.10/(k(k+1)) of the error budget, so all attempts together stay <= 0.10
+# (attempt 1 needs a 95% interval, attempt 2 a 98.3% one, ...).
+FAMILY_ALPHA = 0.10
+MIN_VAL_ROWS_FLOOR = 5
 MAX_EDITS = 4
 # A proposed policy must keep at least this share of the rows the current
 # policy takes, so "post only my 2 luckiest topics" cannot win on noise.
@@ -111,6 +119,7 @@ def paths(root: Path) -> dict[str, Path]:
         "best": root / "best_skill.md",
         "rej": root / "rejected_edits.md",
         "epochs": root / "epochs",
+        "attempts": root / "epochs" / "attempts.jsonl",
     }
 
 
@@ -165,6 +174,11 @@ def validate_row(row: dict, where: str) -> None:
     vr = (feat or {}).get("viral_ratio")
     if vr is not None and (isinstance(vr, bool) or not isinstance(vr, (int, float)) or vr < 0):
         raise DataError(f"{where}: features.viral_ratio must be a number >= 0 (got {vr!r})")
+    fol = (feat or {}).get("author_followers")
+    if fol is not None and (isinstance(fol, bool) or not isinstance(fol, (int, float)) or fol < 0):
+        raise DataError(
+            f"{where}: features.author_followers must be a number >= 0 (got {fol!r})"
+        )
 
 
 def has_metrics(row: dict) -> bool:
@@ -315,10 +329,11 @@ def _text_tokens(text: str) -> frozenset:
 
 def duplicate_ids(rows: list[dict]) -> set[str]:
     """Ids of rows whose text is a near-duplicate of an earlier same-type
-    row (token Jaccard >= DUPLICATE_JACCARD). The later row is the dupe."""
+    row (token Jaccard >= DUPLICATE_JACCARD). The later row in the log (the
+    log is append-only, so file order is ship order) is the dupe."""
     seen: dict[str, list[frozenset]] = {}
     dups: set[str] = set()
-    for r in sorted(rows, key=lambda r: str(r.get("ts") or "")):
+    for r in rows:
         rtype = str(r.get("type") or "")
         tokens = _text_tokens(str(r.get("text") or ""))
         if not tokens:
@@ -343,6 +358,13 @@ def _interval(stats: list[float], level: float) -> tuple[float, float]:
     lo = stats[max(0, int(lo_q * (len(stats) - 1)))]
     hi = stats[min(len(stats) - 1, int((1.0 - lo_q) * (len(stats) - 1)))]
     return lo, hi
+
+
+def _widen(lo: float, hi: float, center: float, n: int) -> tuple[float, float]:
+    """Percentile bootstraps are too narrow on few rows (they use the n, not
+    n-1, variance). Widen around the point estimate by sqrt(n/(n-1))."""
+    f = math.sqrt(n / (n - 1)) if n > 1 else 1.0
+    return center - (center - lo) * f, center + (hi - center) * f
 
 
 def bootstrap_replay_ci(
@@ -422,6 +444,12 @@ def load_config(p: dict[str, Path]) -> dict:
         v = cfg.get(k)
         if v is not None and (isinstance(v, bool) or not isinstance(v, int) or v < 1):
             raise DataError(f"{held.name}: '{k}' must be a positive integer")
+    mv = cfg.get("min_val_rows")
+    if mv is not None and mv < MIN_VAL_ROWS_FLOOR:
+        raise DataError(
+            f"{held.name}: 'min_val_rows' must be >= {MIN_VAL_ROWS_FLOOR}; "
+            "an interval over fewer rows is noise"
+        )
     topics = cfg.get("niche_topics")
     if topics is not None and (
         not isinstance(topics, list) or not all(isinstance(t, str) for t in topics)
@@ -462,6 +490,39 @@ def _mean(xs: list[float]) -> float:
     return sum(xs) / len(xs) if xs else 0.0
 
 
+def record_attempt(p: dict[str, Path], cmd: str, sha_b: str) -> int:
+    """Log one try of a proposal against the val rows; return k, the number
+    of distinct proposals tried since the last accept (this one included)."""
+    shas: set[str] = set()
+    if p["attempts"].exists():
+        for line in p["attempts"].read_text(encoding="utf-8").splitlines():
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if obj.get("reset"):
+                shas = set()
+            elif isinstance(obj.get("sha_b"), str):
+                shas.add(obj["sha_b"])
+    shas.add(sha_b)
+    p["attempts"].parent.mkdir(parents=True, exist_ok=True)
+    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    with p["attempts"].open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": stamp, "cmd": cmd, "sha_b": sha_b}) + "\n")
+    return len(shas)
+
+
+def reset_attempts(p: dict[str, Path], ts: str) -> None:
+    p["attempts"].parent.mkdir(parents=True, exist_ok=True)
+    with p["attempts"].open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": ts, "reset": "accepted"}) + "\n")
+
+
+def level_for(attempt: int) -> float:
+    k = max(attempt, 1)
+    return 1.0 - FAMILY_ALPHA / (k * (k + 1))
+
+
 def score_rows(rows: list[dict], cfg: dict, all_rows: list[dict] | None = None) -> list[float]:
     """Fixed reward for each row; near-duplicates are judged against all rows."""
     dups = duplicate_ids(all_rows if all_rows is not None else rows)
@@ -469,7 +530,12 @@ def score_rows(rows: list[dict], cfg: dict, all_rows: list[dict] | None = None) 
 
 
 def evaluate_replay(
-    val: list[dict], scores: list[float], policy_a: dict, policy_b: dict, min_rows: int
+    val: list[dict],
+    scores: list[float],
+    policy_a: dict,
+    policy_b: dict,
+    min_rows: int,
+    attempt: int = 1,
 ) -> dict:
     """Off-policy replay on logged val rows: mean fixed reward of the rows
     each targeting policy would have made. B must keep enough rows."""
@@ -485,9 +551,12 @@ def evaluate_replay(
         "mean_a": round(mean_a, 4),
         "mean_b": round(mean_b, 4),
         "delta_mean": round(mean_b - mean_a, 4),
-        "ci90_low": 0.0,
-        "ci90_high": 0.0,
-        "rule": "accept b iff delta_mean > 0 and ci90_low > 0, "
+        "attempt": attempt,
+        "ci_level": round(level_for(attempt), 4),
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "rule": "accept b iff delta_mean > 0 and ci_low > 0 "
+        "(ci_level = 1 - 0.10/(attempt*(attempt+1))), "
         f"and b keeps >= max(min_val_rows, {MIN_COVERAGE:.0%} of a's rows)",
     }
     need = max(min_rows, math.ceil(MIN_COVERAGE * n_a))
@@ -503,25 +572,43 @@ def evaluate_replay(
         out["reason"] = "both policies take the same rows (prose-only edits replay as a tie)"
         return out
     ids = [str(r.get("id")) for r in val]
-    lo, hi = bootstrap_replay_ci(scores, take_a, take_b, seed=seed_for(ids))
-    out.update(ci90_low=round(lo, 4), ci90_high=round(hi, 4))
+    lo, hi = bootstrap_replay_ci(
+        scores, take_a, take_b, level=level_for(attempt), seed=seed_for(ids)
+    )
+    lo, hi = _widen(lo, hi, mean_b - mean_a, n_b)
+    out.update(ci_low=round(lo, 4), ci_high=round(hi, 4))
     out["verdict"] = _verdict(mean_b - mean_a, lo, hi)
     return out
 
 
 def evaluate_trial(
-    val: list[dict], scores: list[float], sha_a: str | None, sha_b: str, min_rows: int
+    val: list[dict],
+    scores: list[float],
+    sha_a: str | None,
+    sha_b: str,
+    min_rows: int,
+    attempt: int = 1,
 ) -> dict | None:
     """Live trial: val rows logged while the proposed skill was deployed
-    (skill_sha256 == sha_b) against val rows logged under the current one.
-    None when either side has fewer than min_rows scored rows."""
-    a = [s for r, s in zip(val, scores, strict=True) if sha_a and r.get("skill_sha256") == sha_a]
-    b = [s for r, s in zip(val, scores, strict=True) if r.get("skill_sha256") == sha_b]
+    (skill_sha256 == sha_b) against val rows logged under the current skill
+    in the same window (ts at or after the first trial row), so account
+    growth over time cannot pose as a skill effect. None when either side
+    has fewer than min_rows scored rows."""
+    if not sha_a or sha_a == sha_b:
+        return None
+    pairs = list(zip(val, scores, strict=True))
+    b_rows = [(r, s) for r, s in pairs if r.get("skill_sha256") == sha_b]
+    if not b_rows:
+        return None
+    start = min(str(r.get("ts") or "") for r, _ in b_rows)
+    a = [s for r, s in pairs if r.get("skill_sha256") == sha_a and str(r.get("ts") or "") >= start]
+    b = [s for _, s in b_rows]
     if len(a) < min_rows or len(b) < min_rows:
         return None
     ids = [str(r.get("id")) for r in val]
-    lo, hi = bootstrap_two_sample_ci(a, b, seed=seed_for(ids))
     delta = _mean(b) - _mean(a)
+    lo, hi = bootstrap_two_sample_ci(a, b, level=level_for(attempt), seed=seed_for(ids))
+    lo, hi = _widen(lo, hi, delta, min(len(a), len(b)))
     return {
         "method": "trial",
         "n_a": len(a),
@@ -529,10 +616,14 @@ def evaluate_trial(
         "mean_a": round(_mean(a), 4),
         "mean_b": round(_mean(b), 4),
         "delta_mean": round(delta, 4),
-        "ci90_low": round(lo, 4),
-        "ci90_high": round(hi, 4),
+        "attempt": attempt,
+        "ci_level": round(level_for(attempt), 4),
+        "ci_low": round(lo, 4),
+        "ci_high": round(hi, 4),
+        "trial_start": start,
         "verdict": _verdict(delta, lo, hi),
-        "rule": "accept b iff delta_mean > 0 and ci90_low > 0 (two-sample bootstrap)",
+        "rule": "accept b iff delta_mean > 0 and ci_low > 0 (two-sample bootstrap, "
+        "ci_level = 1 - 0.10/(attempt*(attempt+1)), a = current-skill rows in the trial window)",
     }
 
 
@@ -586,7 +677,7 @@ def cmd_status(p: dict[str, Path]) -> int:
             "author_followers default; their velocity is per 1 follower, so they are not "
             "comparable with rows that log it"
         )
-    out["lr"] = cfg.get("learning_rate_max_edits", MAX_EDITS)
+    out["lr"] = min(int(cfg.get("learning_rate_max_edits", MAX_EDITS)), MAX_EDITS)
     out["score_version"] = SCORE_VERSION
     if not rows:
         out["hint"] = (
@@ -642,11 +733,12 @@ def _unique_path(p: dict[str, Path], stamp: str, accepted: bool) -> Path:
 def cmd_gate(
     p: dict[str, Path], result: str, summary: str, edits: list[str], skill: str | None
 ) -> int:
-    if len(edits) > MAX_EDITS:
-        raise DataError(
-            f"gate: {len(edits)} edits given; the learning rate is at most {MAX_EDITS} per epoch"
-        )
     cfg = load_config(p)
+    lr = min(int(cfg.get("learning_rate_max_edits", MAX_EDITS)), MAX_EDITS)
+    if len(edits) > lr:
+        raise DataError(
+            f"gate: {len(edits)} edits given; the learning rate is at most {lr} per epoch"
+        )
     rows = load_traj(p["traj"])
     for i, r in enumerate(rows, 1):
         validate_row(r, f"{p['traj'].name} line {i}")
@@ -668,7 +760,7 @@ def cmd_gate(
         return 3
     _, val = split_rows(rows, cfg)
     scored_val = [r for r in val if has_metrics(r)]
-    min_val = int(cfg.get("min_val_rows", 5))
+    min_val = int(cfg.get("min_val_rows", MIN_VAL_ROWS_FLOOR))
     if not scored_val:
         print(
             json.dumps(
@@ -732,9 +824,10 @@ def cmd_gate(
         sha_b = sha256_file(proposed)
         # held-out rows only; the operator reflected on train rows
         scores = score_rows(scored_val, cfg, all_rows=rows)
-        ev = evaluate_trial(scored_val, scores, sha_a, sha_b, min_val) or evaluate_replay(
-            scored_val, scores, policy_a, policy_b, min_val
-        )
+        attempt = record_attempt(p, "gate", sha_b)
+        ev = evaluate_trial(
+            scored_val, scores, sha_a, sha_b, min_val, attempt
+        ) or evaluate_replay(scored_val, scores, policy_a, policy_b, min_val, attempt)
         accepted = ev["verdict"] == "b"
         receipt.update(
             {
@@ -749,23 +842,32 @@ def cmd_gate(
                 "val_mean_before": ev["mean_a"],
                 "val_mean_after": ev["mean_b"],
                 "delta_mean": ev["delta_mean"],
-                "ci90_low": ev["ci90_low"],
-                "ci90_high": ev["ci90_high"],
+                "attempt": ev["attempt"],
+                "ci_level": ev["ci_level"],
+                "ci_low": ev["ci_low"],
+                "ci_high": ev["ci_high"],
+                "bootstrap_resamples": BOOTSTRAP_RESAMPLES,
                 "verdict": ev["verdict"],
                 "rule": ev["rule"],
             }
         )
-        if "reason" in ev:
-            receipt["reason"] = ev["reason"]
+        for k in ("reason", "trial_start"):
+            if k in ev:
+                receipt[k] = ev[k]
         if accepted:
             if p["best"].exists():  # keep the replaced skill so an accept can be rolled back
                 p["epochs"].mkdir(parents=True, exist_ok=True)
                 prev = p["epochs"] / f"{receipt['ts']}_best_before.md"
+                n = 1
+                while prev.exists():
+                    prev = p["epochs"] / f"{receipt['ts']}-{n}_best_before.md"
+                    n += 1
                 prev.write_text(best_text, encoding="utf-8")
                 receipt["skill_before_copy"] = str(prev)
             tmp = p["best"].with_suffix(".md.tmp")
             tmp.write_text(prop_text, encoding="utf-8")
             os.replace(tmp, p["best"])
+            reset_attempts(p, receipt["ts"])
     else:
         receipt["decision_basis"] = "manual"
 
@@ -774,8 +876,16 @@ def cmd_gate(
     receipt["accepted"] = accepted
     path.write_text(json.dumps(receipt, indent=2), encoding="utf-8")
     if not accepted:
+        verdict = receipt.get("verdict")
+        status = {
+            "a": "proven worse, do not retry",
+            "tie": "not proven either way; retry only as a live trial",
+            "insufficient": "not tested (too few rows); retry when there is data",
+        }.get(verdict, "rejected by hand")
         with p["rej"].open("a", encoding="utf-8") as f:
-            f.write(f"\n## {receipt['ts']}\n{summary}\n")
+            f.write(f"\n## {receipt['ts']} ({status})\n{summary}\n")
+            if receipt.get("reason"):
+                f.write(f"reason: {receipt['reason']}\n")
             for e in edits:
                 f.write(f"- {e}\n")
     print(
@@ -786,7 +896,9 @@ def cmd_gate(
                 "val_mean_before": receipt.get("val_mean_before"),
                 "val_mean_after": receipt.get("val_mean_after"),
                 "delta_mean": receipt.get("delta_mean"),
-                "ci90": [receipt.get("ci90_low"), receipt.get("ci90_high")],
+                "ci": [receipt.get("ci_low"), receipt.get("ci_high")],
+                "ci_level": receipt.get("ci_level"),
+                "attempt": receipt.get("attempt"),
                 "method": receipt.get("method"),
                 "verdict": receipt.get("verdict"),
                 "reason": receipt.get("reason"),
@@ -813,7 +925,11 @@ def cmd_replay(p: dict[str, Path], skill_a: str, skill_b: str) -> int:
     pa = parse_policy_file(Path(skill_a).expanduser())
     pb = parse_policy_file(Path(skill_b).expanduser())
     scores = score_rows(scored_val, cfg, all_rows=rows)
-    ev = evaluate_replay(scored_val, scores, pa, pb, int(cfg.get("min_val_rows", 5)))
+    # a replay is a look at the val rows too: it counts as an attempt
+    attempt = record_attempt(p, "replay", sha256_file(Path(skill_b).expanduser()))
+    ev = evaluate_replay(
+        scored_val, scores, pa, pb, int(cfg.get("min_val_rows", MIN_VAL_ROWS_FLOOR)), attempt
+    )
     out = {
         "skill_a": str(Path(skill_a)),
         "skill_b": str(Path(skill_b)),
@@ -821,7 +937,8 @@ def cmd_replay(p: dict[str, Path], skill_a: str, skill_b: str) -> int:
         "n_val_scored": len(scored_val),
         **ev,
         "note": "replays each skill's targeting policy on held-out rows against a fixed "
-        "reward; prose-only edits replay as a tie (prove those with a live trial)",
+        "reward; prose-only edits replay as a tie (prove those with a live trial). "
+        "Each distinct skill_b tried since the last accept raises the bar (attempt).",
     }
     print(json.dumps(out, indent=2))
     return 0

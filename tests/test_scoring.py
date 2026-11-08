@@ -188,3 +188,10 @@ def test_two_sample_ci_of_constant_groups_is_degenerate(sc):
 
 def test_seed_is_deterministic(sc):
     assert sc.seed_for(["b", "a"]) == sc.seed_for(["a", "b"])
+
+
+def test_duplicate_ids_use_log_order_when_ts_missing(sc):
+    r1 = make_row("first", text="the checkout drop kills paid conversion")
+    r2 = make_row("second", text="the checkout drop kills paid conversion")
+    r2.pop("ts")
+    assert sc.duplicate_ids([r1, r2]) == {"second"}
