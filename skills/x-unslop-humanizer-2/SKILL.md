@@ -2,14 +2,15 @@
 name: X unslop humanizer
 description: >-
   use this when writing or rewriting any X/Twitter post, reply, or thread for
-  the operator so copy sounds human and X-native, never AI or fake internet slang
+  the operator: a tight second quality pass for specific, X-native copy without
+  filler cliches or fake internet slang
 ---
 # X unslop humanizer (tight pass)
 
 Same rules as the primary unslop skill. Use this as a second pass when the
-draft still sounds like a model trying to be casual.
+draft still reads as filler or forced casual.
 
-Ban fake-clever AI trying to sound human:
+Ban fake-clever filler:
 
 - "the X is the real story"
 - "Y vanity ends there"

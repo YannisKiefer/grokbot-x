@@ -16,7 +16,14 @@ typefully.env
 skillopt/trajectories.jsonl
 skillopt/held_out.json
 skillopt/epochs/*.json
+skillopt/epochs/*.jsonl
+skillopt/epochs/*_best_before.md
+skillopt/proposed.md
+skillopt/*.md.tmp
 !skillopt/epochs/.gitkeep
+
+# Local growth analysis. Deliberately not published (private strategy).
+growth/
 
 # Python
 __pycache__/
@@ -24,6 +31,7 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.ruff_cache/
 
 # OS / editor
 .DS_Store

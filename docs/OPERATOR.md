@@ -26,9 +26,9 @@ Spoken test: would the operator say this out loud?
 
 ## Publish path (locked)
 
-NEVER publish via a bot browser on x.com compose.
-ONLY: Typefully OAuth API with `made_with_ai` false, or the operator's
-own phone / laptop. Details in `PUBLISH.md`.
+NEVER automate x.com in a browser (compose, replies, likes, follows).
+ONLY: Typefully OAuth API (AI disclosure is the operator's `.env`
+setting), or the operator's own phone / laptop. Details in `PUBLISH.md`.
 
 ## Gold targeting
 
@@ -45,14 +45,16 @@ are going nowhere.
 
 ## Cold account
 
-Follow graph before volume. Replies on gold beat orphan originals until
+Graph before volume: flag relevant ICP accounts for the operator to follow
+by hand. Replies on gold beat orphan originals until
 you have a real ICP graph. Never target by follower count alone.
 Hard first line + concrete ops object. No LinkedIn hooks. No bait
 ending questions. No invented metrics.
 
 ## Cadence
 
-7 days/week. Max 1 original/hour. Jitter. Scroll/like/save/reply.
+7 days/week. Max 1 original/hour, spread out. Flag posts worth a like or
+follow for the operator; never like, save or follow yourself.
 See `x-human-cadence.md`.
 
 ## How you behave
