@@ -4,25 +4,30 @@
 harvest metrics -> reflect train vs val -> propose <=LR edits -> gate on held-out
 -> adopt into best_skill.md or append rejected_edits.md
 
-The reward is verifiable (RLVR-style): every score is computed only from X
-counters logged in trajectories.jsonl (views, replies, bookmarks, likes),
-normalized by post age and the operator's follower count (velocity, not raw
-views), with penalties for near-duplicate posts, off-niche topics, and
-risky parents. No model judges "quality".
+The reward is verifiable (RLVR-style) and FIXED: every score is computed
+only from X counters logged in trajectories.jsonl (views, replies,
+bookmarks, likes), normalized by post age and the operator's follower count
+(velocity, not raw views), with penalties for near-duplicate posts,
+off-niche topics (niche list in held_out.json) and risky parents. No model
+judges "quality", and no skill edit can change the reward.
 
-The gate is machine-checked: an edit is accepted only if the held-out mean
-improves AND the bootstrap 90% interval of the improvement is above zero,
-with a minimum row count. Every epoch is logged with before/after scores
-and the interval. `replay` runs the same math on two skill files offline,
-so improvements are proven before they go live.
+The gate is machine-checked on held-out (val) rows only. An edit is
+accepted only if the mean reward improves AND the bootstrap 90% interval of
+the improvement is above zero, with minimum row counts. Two kinds of
+evidence count:
 
-The operator (or Grok Bot) does the reflection. This file does the math and
-the bookkeeping. No network calls.
+- trial: val rows logged while the proposed skill was live (their
+  skill_sha256 matches it) against val rows logged under the current skill;
+- replay: the proposed targeting policy, replayed on logged val rows, picks
+  rows with a higher fixed reward than the current policy picks.
 
-Each skill file may carry one machine-readable policy comment; it is the
-only part of a skill the scorer can see:
+Every epoch is logged with before/after scores and the interval. `replay`
+runs the replay math offline. The operator (or Grok Bot) does the
+reflection. This file does the math and the bookkeeping. No network calls.
 
-    <!-- skillopt-policy {"reply_bonus_ratio": 12, "niche_topics": ["ads"]} -->
+Each skill file may carry one machine-readable targeting policy comment:
+
+    <!-- skillopt-policy {"min_parent_ratio": 12, "topics": ["ads"]} -->
 
 Paths are relative to this file, or override with SKILLOPT_DIR / --root
 (--root works before or after the subcommand).
@@ -40,7 +45,7 @@ import re
 import sys
 from pathlib import Path
 
-SCORE_VERSION = "v2-velocity-2026-11-08"
+SCORE_VERSION = "v3-fixed-reward-2026-11-08"
 
 # (bucket name, hours since ship). First match wins, so this list is ordered
 # newest-first: the most recent measurement of a post is its live state.
@@ -65,22 +70,21 @@ DUPLICATE_JACCARD = 0.8
 BOOTSTRAP_RESAMPLES = 10_000
 BOOTSTRAP_LEVEL = 0.90
 MAX_EDITS = 4
+# A proposed policy must keep at least this share of the rows the current
+# policy takes, so "post only my 2 luckiest topics" cannot win on noise.
+MIN_COVERAGE = 0.5
 
+# The skill policy is a TARGETING rule (which posts to make), never a scoring
+# rule. The reward is fixed and lives only in this file and held_out.json, so
+# an edit cannot win by loosening its own penalties (Goodhart).
 DEFAULT_POLICY: dict = {
-    "reply_bonus_ratio": 12.0,        # reply on parent >= this ratio: bonus
-    "reply_bonus_strong_ratio": 20.0, # reply on parent >= this ratio: bigger bonus
-    "low_ratio_penalty_below": 5.0,   # reply on parent < this ratio: penalty (0 = off)
-    "dead_diary_multiplier": 0.4,     # dead-diary posts
-    "niche_topics": [],               # non-empty: off-niche topic penalty
-    "penalize_risky_parents": True,   # replies under flagged risky parents
+    "min_parent_ratio": 0.0,      # replies only under parents with viral_ratio >= this
+    "skip_dead_diary": False,     # skip rows flagged viral_signal = weak_dead_diary
+    "skip_risky_parents": False,  # skip replies under parents flagged parent_risky
+    "topics": [],                 # non-empty: only these topics
 }
-_POLICY_NUM = {
-    "reply_bonus_ratio": float,
-    "reply_bonus_strong_ratio": float,
-    "low_ratio_penalty_below": float,
-    "dead_diary_multiplier": float,
-}
-_POLICY_BOOL = {"penalize_risky_parents"}
+_POLICY_NUM = {"min_parent_ratio"}
+_POLICY_BOOL = {"skip_dead_diary", "skip_risky_parents"}
 
 
 class DataError(Exception):
@@ -164,14 +168,13 @@ def validate_row(row: dict, where: str) -> None:
 
 
 def has_metrics(row: dict) -> bool:
-    """True once any metric bucket carries a measurement. Rows without
-    metrics are pending, not zero - they are excluded from means."""
-    for b in (row.get("metrics") or {}).values():
-        if isinstance(b, dict) and any(
-            b.get(f) is not None for f in ("views", "likes", "replies", "bookmarks")
-        ):
-            return True
-    return False
+    """True once a metric bucket carries a views count (the measurement the
+    scorer reads). Rows without one are pending, not zero - they are
+    excluded from means and from the gate."""
+    return any(
+        isinstance(b, dict) and b.get("views") is not None
+        for b in (row.get("metrics") or {}).values()
+    )
 
 
 # ---------------------------------------------------------------- policy
@@ -207,13 +210,28 @@ def parse_policy(text: str, where: str) -> dict:
             if not isinstance(v, bool):
                 raise DataError(f"{where}: skillopt-policy '{k}' must be true or false")
             policy[k] = v
-        else:  # niche_topics
+        else:  # topics
             if not isinstance(v, list) or not all(isinstance(t, str) for t in v):
-                raise DataError(
-                    f"{where}: skillopt-policy 'niche_topics' must be a list of strings"
-                )
-            policy[k] = [t for t in v if t.strip()]
+                raise DataError(f"{where}: skillopt-policy 'topics' must be a list of strings")
+            policy[k] = [t.strip().lower() for t in v if t.strip()]
     return policy
+
+
+def selects(row: dict, policy: dict) -> bool:
+    """Would a skill with this targeting policy have made this post?"""
+    feat = row.get("features") or {}
+    is_reply = row.get("type") == "reply"
+    if is_reply and policy["min_parent_ratio"] > 0:
+        if _num(feat.get("viral_ratio"), 0.0) < policy["min_parent_ratio"]:
+            return False
+    if policy["skip_dead_diary"] and feat.get("viral_signal") == "weak_dead_diary":
+        return False
+    if is_reply and policy["skip_risky_parents"] and feat.get("parent_risky") is True:
+        return False
+    if policy["topics"]:
+        if str(feat.get("topic") or "").strip().lower() not in policy["topics"]:
+            return False
+    return True
 
 
 def parse_policy_file(path: Path) -> dict:
@@ -236,10 +254,10 @@ def latest_bucket(metrics: dict) -> tuple[str, dict]:
     ordered newest-first); unknown bucket names fall back to file order."""
     for k, _age in BUCKETS:
         b = metrics.get(k)
-        if isinstance(b, dict) and "views" in b:
+        if isinstance(b, dict) and b.get("views") is not None:
             return k, b
     for k, b in metrics.items():
-        if isinstance(b, dict) and "views" in b:
+        if isinstance(b, dict) and b.get("views") is not None:
             return k, b
     return "", {}
 
@@ -249,11 +267,16 @@ def bucket_age_h(name: str) -> float:
     return ages.get(name, 24.0)
 
 
-def rescore(row: dict, policy: dict | None = None, duplicate: bool = False) -> float:
-    """Verifiable reward: X counters only, normalized by post age and the
-    operator's follower count (velocity), weighted toward replies and
-    bookmarks, with Goodhart guards. Sets row["score"], returns it."""
-    policy = policy or dict(DEFAULT_POLICY)
+def rescore(row: dict, cfg: dict | None = None, duplicate: bool = False) -> float:
+    """Fixed, verifiable reward: X counters only, normalized by post age and
+    the operator's follower count (velocity), weighted toward replies and
+    bookmarks, with Goodhart guards. Only outcomes count; how the post was
+    targeted (parent ratio, dead diary, hard open) is the policy's job and
+    is never rewarded directly. Sets row["score"], returns it.
+
+    cfg (held_out.json) may set "author_followers" (default for rows that do
+    not log it) and "niche_topics" (the brand's topics; others score x0.5)."""
+    cfg = cfg or {}
     metrics = row.get("metrics") or {}
     name, b = latest_bucket(metrics)
     views = _num(b.get("views"), 0.0)
@@ -264,33 +287,17 @@ def rescore(row: dict, policy: dict | None = None, duplicate: bool = False) -> f
     )
     age_h = max(bucket_age_h(name) if name else 24.0, MIN_AGE_H)
     feat = row.get("features") or {}
-    followers = max(_num(feat.get("author_followers"), 1.0), 1.0)
-    norm = 1.0 / age_h / followers
+    followers = _num(feat.get("author_followers"), _num(cfg.get("author_followers"), 1.0))
+    norm = 1.0 / age_h / max(followers, 1.0)
 
     # x1000 keeps log1p readable: ~"views per 1000 followers per hour".
     base = math.log1p(1000.0 * views * norm) + 0.75 * math.log1p(1000.0 * eng * norm)
 
-    ratio = _num(feat.get("viral_ratio"), 0.0)
-    if row.get("type") == "reply":
-        if ratio >= policy["reply_bonus_strong_ratio"]:
-            base *= 1.35
-        elif ratio >= policy["reply_bonus_ratio"]:
-            base *= 1.15
-        elif policy["low_ratio_penalty_below"] and ratio < policy["low_ratio_penalty_below"]:
-            base *= 0.7
-    if feat.get("viral_signal") == "weak_dead_diary":
-        base *= policy["dead_diary_multiplier"]
-    if feat.get("hard_open") is True:
-        base *= 1.1
     if feat.get("author_replied") is True:
-        base *= 1.5
-    if (
-        row.get("type") == "reply"
-        and policy["penalize_risky_parents"]
-        and feat.get("parent_risky") is True
-    ):
-        base *= 0.5
-    topics = [t.lower() for t in policy["niche_topics"]]
+        base *= 1.5  # an outcome: the parent's author answered us
+    if row.get("type") == "reply" and feat.get("parent_risky") is True:
+        base *= 0.5  # reach under posts the operator would not want to be seen under
+    topics = [str(t).strip().lower() for t in cfg.get("niche_topics") or []]
     if topics:
         topic = str(feat.get("topic") or "").strip().lower()
         if topic and topic not in topics:
@@ -328,29 +335,62 @@ def duplicate_ids(rows: list[dict]) -> set[str]:
 # ---------------------------------------------------------------- stats
 
 
-def bootstrap_ci(
-    deltas: list[float],
+def _interval(stats: list[float], level: float) -> tuple[float, float]:
+    if not stats:
+        return 0.0, 0.0
+    stats = sorted(stats)
+    lo_q = (1.0 - level) / 2.0
+    lo = stats[max(0, int(lo_q * (len(stats) - 1)))]
+    hi = stats[min(len(stats) - 1, int((1.0 - lo_q) * (len(stats) - 1)))]
+    return lo, hi
+
+
+def bootstrap_replay_ci(
+    scores: list[float],
+    take_a: list[bool],
+    take_b: list[bool],
     resamples: int = BOOTSTRAP_RESAMPLES,
     level: float = BOOTSTRAP_LEVEL,
     seed: int = 0,
 ) -> tuple[float, float]:
-    """Percentile bootstrap CI of the mean delta (stdlib only; see
-    docs/analysis/RESEARCH.md for why percentile, not BCa)."""
-    n = len(deltas)
-    if n == 0:
+    """CI of mean(reward | B takes) - mean(reward | A takes). Rows are
+    resampled together, so both policies see the same resample."""
+    n = len(scores)
+    rng = random.Random(seed)
+    diffs = []
+    for _ in range(resamples):
+        sa = sb = 0.0
+        na = nb = 0
+        for _ in range(n):
+            i = rng.randrange(n)
+            if take_a[i]:
+                sa += scores[i]
+                na += 1
+            if take_b[i]:
+                sb += scores[i]
+                nb += 1
+        if na and nb:
+            diffs.append(sb / nb - sa / na)
+    return _interval(diffs, level)
+
+
+def bootstrap_two_sample_ci(
+    a: list[float],
+    b: list[float],
+    resamples: int = BOOTSTRAP_RESAMPLES,
+    level: float = BOOTSTRAP_LEVEL,
+    seed: int = 0,
+) -> tuple[float, float]:
+    """CI of mean(b) - mean(a) for two independent groups of rows."""
+    if not a or not b:
         return 0.0, 0.0
     rng = random.Random(seed)
-    means = []
+    diffs = []
     for _ in range(resamples):
-        total = 0.0
-        for _ in range(n):
-            total += deltas[rng.randrange(n)]
-        means.append(total / n)
-    means.sort()
-    lo_q = (1.0 - level) / 2.0
-    lo = means[max(0, int(lo_q * (len(means) - 1)))]
-    hi = means[min(len(means) - 1, int((1.0 - lo_q) * (len(means) - 1)))]
-    return lo, hi
+        mb = sum(b[rng.randrange(len(b))] for _ in b) / len(b)
+        ma = sum(a[rng.randrange(len(a))] for _ in a) / len(a)
+        diffs.append(mb - ma)
+    return _interval(diffs, level)
 
 
 def seed_for(ids: list[str]) -> int:
@@ -382,6 +422,14 @@ def load_config(p: dict[str, Path]) -> dict:
         v = cfg.get(k)
         if v is not None and (isinstance(v, bool) or not isinstance(v, int) or v < 1):
             raise DataError(f"{held.name}: '{k}' must be a positive integer")
+    topics = cfg.get("niche_topics")
+    if topics is not None and (
+        not isinstance(topics, list) or not all(isinstance(t, str) for t in topics)
+    ):
+        raise DataError(f"{held.name}: 'niche_topics' must be a list of strings")
+    fol = cfg.get("author_followers")
+    if fol is not None and (isinstance(fol, bool) or not isinstance(fol, (int, float)) or fol < 1):
+        raise DataError(f"{held.name}: 'author_followers' must be a number >= 1")
     return cfg
 
 
@@ -402,50 +450,89 @@ def mean_score(rows: list[dict], ids=None) -> float:
     return sum(float(r.get("score") or 0) for r in rows) / len(rows)
 
 
-def evaluate_policies(rows: list[dict], policy_a: dict, policy_b: dict) -> dict:
-    """Score every scored row under both policies; paired per-row deltas on
-    the rows that have metrics. Returns means, delta, bootstrap CI, verdict."""
-    dups = duplicate_ids(rows)
-    pairs = []  # (id, type, score_a, score_b)
-    for r in rows:
-        if not has_metrics(r):
-            continue
-        ra, rb = dict(r), dict(r)
-        dupe = str(r.get("id")) in dups
-        sa = rescore(ra, policy_a, duplicate=dupe)
-        sb = rescore(rb, policy_b, duplicate=dupe)
-        pairs.append((str(r.get("id")), r.get("type"), sa, sb))
-
-    by_type: dict[str, list[float]] = {}
-    deltas = []
-    for _rid, rtype, sa, sb in pairs:
-        deltas.append(sb - sa)
-        by_type.setdefault(str(rtype), []).append(sb - sa)
-
-    mean_a = sum(p[2] for p in pairs) / len(pairs) if pairs else 0.0
-    mean_b = sum(p[3] for p in pairs) / len(pairs) if pairs else 0.0
-    delta = mean_b - mean_a
-    lo, hi = bootstrap_ci(deltas, seed=seed_for([p[0] for p in pairs]))
+def _verdict(delta: float, lo: float, hi: float) -> str:
     if delta > 0 and lo > 0:
-        verdict = "b"
-    elif delta < 0 and hi < 0:
-        verdict = "a"
-    else:
-        verdict = "tie"
-    per_type = {
-        t: {"n": len(v), "delta_mean": round(sum(v) / len(v), 4)}
-        for t, v in sorted(by_type.items())
-    }
-    return {
-        "n_scored": len(pairs),
+        return "b"
+    if delta < 0 and hi < 0:
+        return "a"
+    return "tie"
+
+
+def _mean(xs: list[float]) -> float:
+    return sum(xs) / len(xs) if xs else 0.0
+
+
+def score_rows(rows: list[dict], cfg: dict, all_rows: list[dict] | None = None) -> list[float]:
+    """Fixed reward for each row; near-duplicates are judged against all rows."""
+    dups = duplicate_ids(all_rows if all_rows is not None else rows)
+    return [rescore(dict(r), cfg, duplicate=str(r.get("id")) in dups) for r in rows]
+
+
+def evaluate_replay(
+    val: list[dict], scores: list[float], policy_a: dict, policy_b: dict, min_rows: int
+) -> dict:
+    """Off-policy replay on logged val rows: mean fixed reward of the rows
+    each targeting policy would have made. B must keep enough rows."""
+    take_a = [selects(r, policy_a) for r in val]
+    take_b = [selects(r, policy_b) for r in val]
+    n_a, n_b = sum(take_a), sum(take_b)
+    mean_a = _mean([s for s, t in zip(scores, take_a, strict=True) if t])
+    mean_b = _mean([s for s, t in zip(scores, take_b, strict=True) if t])
+    out = {
+        "method": "replay",
+        "n_a": n_a,
+        "n_b": n_b,
         "mean_a": round(mean_a, 4),
         "mean_b": round(mean_b, 4),
+        "delta_mean": round(mean_b - mean_a, 4),
+        "ci90_low": 0.0,
+        "ci90_high": 0.0,
+        "rule": "accept b iff delta_mean > 0 and ci90_low > 0, "
+        f"and b keeps >= max(min_val_rows, {MIN_COVERAGE:.0%} of a's rows)",
+    }
+    need = max(min_rows, math.ceil(MIN_COVERAGE * n_a))
+    if n_a < min_rows or n_b < need:
+        out["verdict"] = "insufficient"
+        out["reason"] = (
+            f"a takes {n_a} and b takes {n_b} of {len(val)} val rows; "
+            f"b needs >= {need} and a >= {min_rows}"
+        )
+        return out
+    if take_a == take_b:
+        out["verdict"] = "tie"
+        out["reason"] = "both policies take the same rows (prose-only edits replay as a tie)"
+        return out
+    ids = [str(r.get("id")) for r in val]
+    lo, hi = bootstrap_replay_ci(scores, take_a, take_b, seed=seed_for(ids))
+    out.update(ci90_low=round(lo, 4), ci90_high=round(hi, 4))
+    out["verdict"] = _verdict(mean_b - mean_a, lo, hi)
+    return out
+
+
+def evaluate_trial(
+    val: list[dict], scores: list[float], sha_a: str | None, sha_b: str, min_rows: int
+) -> dict | None:
+    """Live trial: val rows logged while the proposed skill was deployed
+    (skill_sha256 == sha_b) against val rows logged under the current one.
+    None when either side has fewer than min_rows scored rows."""
+    a = [s for r, s in zip(val, scores, strict=True) if sha_a and r.get("skill_sha256") == sha_a]
+    b = [s for r, s in zip(val, scores, strict=True) if r.get("skill_sha256") == sha_b]
+    if len(a) < min_rows or len(b) < min_rows:
+        return None
+    ids = [str(r.get("id")) for r in val]
+    lo, hi = bootstrap_two_sample_ci(a, b, seed=seed_for(ids))
+    delta = _mean(b) - _mean(a)
+    return {
+        "method": "trial",
+        "n_a": len(a),
+        "n_b": len(b),
+        "mean_a": round(_mean(a), 4),
+        "mean_b": round(_mean(b), 4),
         "delta_mean": round(delta, 4),
         "ci90_low": round(lo, 4),
         "ci90_high": round(hi, 4),
-        "verdict": verdict,
-        "per_type": per_type,
-        "rule": "accept b iff delta_mean > 0 and ci90_low > 0",
+        "verdict": _verdict(delta, lo, hi),
+        "rule": "accept b iff delta_mean > 0 and ci90_low > 0 (two-sample bootstrap)",
     }
 
 
@@ -485,11 +572,20 @@ def cmd_status(p: dict[str, Path]) -> int:
         validate_row(r, f"{p['traj'].name} line {i}")
     dups = duplicate_ids(rows)
     for r in rows:
-        rescore(r, duplicate=str(r.get("id")) in dups)
+        rescore(r, cfg, duplicate=str(r.get("id")) in dups)
     train, val = split_rows(rows, cfg)
     out = _fmt_status(rows, train, val)
     out["min_before_edit"] = cfg.get("min_trajectories_before_edit", 8)
-    out["ready_for_edit"] = len(rows) >= int(cfg.get("min_trajectories_before_edit", 8))
+    out["ready_for_edit"] = out["n_scored"] >= int(cfg.get("min_trajectories_before_edit", 8))
+    no_fol = sum(
+        1 for r in rows if (r.get("features") or {}).get("author_followers") is None
+    )
+    if no_fol and cfg.get("author_followers") is None:
+        out["warning"] = (
+            f"{no_fol} rows have no features.author_followers and held_out.json sets no "
+            "author_followers default; their velocity is per 1 follower, so they are not "
+            "comparable with rows that log it"
+        )
     out["lr"] = cfg.get("learning_rate_max_edits", MAX_EDITS)
     out["score_version"] = SCORE_VERSION
     if not rows:
@@ -501,7 +597,7 @@ def cmd_status(p: dict[str, Path]) -> int:
     return 0
 
 
-def cmd_append(p: dict[str, Path], payload: str) -> int:
+def cmd_append(p: dict[str, Path], payload: str, skill: str | None = None) -> int:
     try:
         obj = json.loads(payload)
     except json.JSONDecodeError as e:
@@ -514,13 +610,18 @@ def cmd_append(p: dict[str, Path], payload: str) -> int:
         validate_row(r, f"{p['traj'].name} line {i}")
     if any(str(r.get("id")) == obj["id"] for r in rows):
         raise DataError(f"append: id '{obj['id']}' already exists in {p['traj'].name}")
-    policy = (
-        parse_policy(p["best"].read_text(encoding="utf-8"), p["best"].name)
-        if p["best"].exists()
-        else dict(DEFAULT_POLICY)
-    )
+    sha = obj.get("skill_sha256")
+    if sha is not None and not isinstance(sha, str):
+        raise DataError("append: 'skill_sha256' must be a string")
+    if skill:  # a live trial of a proposed skill
+        sk = Path(skill).expanduser()
+        if not sk.exists():
+            raise DataError(f"{sk}: skill file not found")
+        obj["skill_sha256"] = sha256_file(sk)
+    elif sha is None and p["best"].exists():
+        obj["skill_sha256"] = sha256_file(p["best"])  # which skill wrote this post
     dupe = str(obj["id"]) in duplicate_ids(rows + [obj])
-    score = rescore(obj, policy, duplicate=dupe)
+    score = rescore(obj, load_config(p), duplicate=dupe)
     obj["score_version"] = SCORE_VERSION
     with p["traj"].open("a", encoding="utf-8") as f:
         f.write(json.dumps(obj, ensure_ascii=False) + "\n")
@@ -551,12 +652,13 @@ def cmd_gate(
         validate_row(r, f"{p['traj'].name} line {i}")
 
     min_rows = int(cfg.get("min_trajectories_before_edit", 8))
-    if len(rows) < min_rows:
+    n_scored = sum(1 for r in rows if has_metrics(r))
+    if n_scored < min_rows:
         print(
             json.dumps(
                 {
                     "error": "too few rows to gate an edit",
-                    "n_rows": len(rows),
+                    "n_rows": n_scored,
                     "min_rows": min_rows,
                     "advice": "log more ships first; the gate refuses to learn from a tiny sample",
                 },
@@ -626,25 +728,41 @@ def cmd_gate(
         prop_text = proposed.read_text(encoding="utf-8")
         policy_a = parse_policy(best_text, p["best"].name)
         policy_b = parse_policy(prop_text, proposed.name)
-        ev = evaluate_policies(rows, policy_a, policy_b)
+        sha_a = sha256_file(p["best"]) if p["best"].exists() else None
+        sha_b = sha256_file(proposed)
+        # held-out rows only; the operator reflected on train rows
+        scores = score_rows(scored_val, cfg, all_rows=rows)
+        ev = evaluate_trial(scored_val, scores, sha_a, sha_b, min_val) or evaluate_replay(
+            scored_val, scores, policy_a, policy_b, min_val
+        )
         accepted = ev["verdict"] == "b"
         receipt.update(
             {
                 "decision_basis": "computed",
+                "method": ev["method"],
                 "skill_before": str(p["best"]),
-                "skill_before_sha256": sha256_file(p["best"]) if p["best"].exists() else None,
+                "skill_before_sha256": sha_a,
                 "skill_after": str(proposed.resolve()),
-                "skill_after_sha256": sha256_file(proposed),
+                "skill_after_sha256": sha_b,
+                "n_a": ev["n_a"],
+                "n_b": ev["n_b"],
                 "val_mean_before": ev["mean_a"],
                 "val_mean_after": ev["mean_b"],
                 "delta_mean": ev["delta_mean"],
                 "ci90_low": ev["ci90_low"],
                 "ci90_high": ev["ci90_high"],
-                "per_type": ev["per_type"],
+                "verdict": ev["verdict"],
                 "rule": ev["rule"],
             }
         )
+        if "reason" in ev:
+            receipt["reason"] = ev["reason"]
         if accepted:
+            if p["best"].exists():  # keep the replaced skill so an accept can be rolled back
+                p["epochs"].mkdir(parents=True, exist_ok=True)
+                prev = p["epochs"] / f"{receipt['ts']}_best_before.md"
+                prev.write_text(best_text, encoding="utf-8")
+                receipt["skill_before_copy"] = str(prev)
             tmp = p["best"].with_suffix(".md.tmp")
             tmp.write_text(prop_text, encoding="utf-8")
             os.replace(tmp, p["best"])
@@ -669,6 +787,9 @@ def cmd_gate(
                 "val_mean_after": receipt.get("val_mean_after"),
                 "delta_mean": receipt.get("delta_mean"),
                 "ci90": [receipt.get("ci90_low"), receipt.get("ci90_high")],
+                "method": receipt.get("method"),
+                "verdict": receipt.get("verdict"),
+                "reason": receipt.get("reason"),
                 "skill_updated": accepted,
             },
             indent=2,
@@ -691,15 +812,16 @@ def cmd_replay(p: dict[str, Path], skill_a: str, skill_b: str) -> int:
         )
     pa = parse_policy_file(Path(skill_a).expanduser())
     pb = parse_policy_file(Path(skill_b).expanduser())
-    ev = evaluate_policies(scored_val, pa, pb)
+    scores = score_rows(scored_val, cfg, all_rows=rows)
+    ev = evaluate_replay(scored_val, scores, pa, pb, int(cfg.get("min_val_rows", 5)))
     out = {
         "skill_a": str(Path(skill_a)),
         "skill_b": str(Path(skill_b)),
         "score_version": SCORE_VERSION,
         "n_val_scored": len(scored_val),
         **ev,
-        "note": "replays the skillopt-policy block of each skill on held-out rows; "
-        "prose-only edits replay as a tie",
+        "note": "replays each skill's targeting policy on held-out rows against a fixed "
+        "reward; prose-only edits replay as a tie (prove those with a live trial)",
     }
     print(json.dumps(out, indent=2))
     return 0
@@ -725,6 +847,9 @@ def main(argv: list[str] | None = None) -> int:
 
     ap = add("append", "append one JSON trajectory from --json or stdin")
     ap.add_argument("--json", default=None, help="trajectory object as a JSON string")
+    ap.add_argument(
+        "--skill", default=None, help="skill file that wrote this post (live trial of a proposal)"
+    )
 
     gp = add("gate", "book an epoch; 'accept' is computed from data, 'reject' is manual")
     gp.add_argument("result", choices=("accept", "reject"))
@@ -749,7 +874,7 @@ def main(argv: list[str] | None = None) -> int:
             payload = args.json if args.json else sys.stdin.read()
             if not payload.strip():
                 raise DataError("append needs --json or stdin")
-            return cmd_append(p, payload)
+            return cmd_append(p, payload, args.skill)
         if cmd == "gate":
             return cmd_gate(p, args.result, args.summary, args.edit, args.skill)
         if cmd == "replay":

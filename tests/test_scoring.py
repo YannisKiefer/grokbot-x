@@ -43,25 +43,12 @@ def test_engagement_adds_to_views(sc):
     assert plus > base
 
 
-def test_reply_bonus_strong_ratio(sc):
-    s20 = sc.rescore(make_row("a", rtype="reply", ratio=25))
-    s_plain = sc.rescore(make_row("b", rtype="reply", ratio=11))
-    assert s20 > s_plain
-
-
-def test_reply_bonus_default_policy_boundaries(sc):
-    at20 = sc.rescore(make_row("a", rtype="reply", ratio=20))
-    at19 = sc.rescore(make_row("b", rtype="reply", ratio=19.9))
-    assert at20 > at19
-    below5 = sc.rescore(make_row("c", rtype="reply", ratio=4))
-    at5 = sc.rescore(make_row("d", rtype="reply", ratio=5))
-    assert below5 < at5  # low-ratio penalty
-
-
-def test_original_gets_no_reply_bonus(sc):
-    reply = sc.rescore(make_row("a", rtype="reply", ratio=50))
-    original = sc.rescore(make_row("b", rtype="original"))
-    assert reply > original
+def test_targeting_features_are_not_rewarded(sc):
+    # Parent ratio is a targeting choice, not an outcome: same counters, same reward.
+    gold = sc.rescore(make_row("a", rtype="reply", ratio=25))
+    weak = sc.rescore(make_row("b", rtype="reply", ratio=2))
+    original = sc.rescore(make_row("c", rtype="original"))
+    assert gold == weak == original
 
 
 def test_author_reply_bonus(sc):
@@ -71,22 +58,23 @@ def test_author_reply_bonus(sc):
     assert sc.rescore(replied) > sc.rescore(plain)
 
 
-def test_dead_diary_penalty(sc):
-    live = make_row("a", ratio=0.2)
+def test_dead_diary_and_hard_open_do_not_change_the_reward(sc):
+    plain = make_row("a", ratio=0.2)
     dead = make_row("b", ratio=0.2)
     dead["features"]["viral_signal"] = "weak_dead_diary"
-    assert sc.rescore(dead) < sc.rescore(live) * 0.5
+    opened = make_row("c")
+    opened["features"]["hard_open"] = True
+    assert sc.rescore(dead) == sc.rescore(plain) == sc.rescore(opened)
 
 
-def test_hard_open_small_bonus(sc):
-    a = make_row("a")
-    b = make_row("b")
-    b["features"]["hard_open"] = True
-    assert sc.rescore(b) > sc.rescore(a)
+def test_config_follower_default_applies_to_rows_without_followers(sc):
+    no_feat = make_row("a", views=100)
+    logged = make_row("b", views=100, followers=500)
+    assert sc.rescore(no_feat, {"author_followers": 500}) == sc.rescore(logged)
 
 
 def test_off_niche_penalty_from_policy(sc):
-    policy = dict(sc.DEFAULT_POLICY, niche_topics=["ads", "checkout"])
+    policy = {"niche_topics": ["ads", "checkout"]}
     on = make_row("a", topic="ads")
     off = make_row("b", topic="celebrity_gossip")
     assert sc.rescore(off, policy) < sc.rescore(on, policy)
@@ -94,7 +82,7 @@ def test_off_niche_penalty_from_policy(sc):
 
 def test_no_niche_list_means_no_penalty(sc):
     off = make_row("a", topic="celebrity_gossip")
-    assert sc.rescore(dict(off), dict(sc.DEFAULT_POLICY)) == sc.rescore(dict(off), None)
+    assert sc.rescore(dict(off), {}) == sc.rescore(dict(off), None)
 
 
 def test_risky_parent_penalty(sc):
@@ -130,10 +118,36 @@ def test_policy_parse_defaults_when_no_block(sc):
 
 
 def test_policy_parse_overrides(sc):
-    text = 'prose\n<!-- skillopt-policy {"reply_bonus_ratio": 15, "niche_topics": ["Ads"]} -->\n'
+    text = 'prose\n<!-- skillopt-policy {"min_parent_ratio": 15, "topics": [" Ads "]} -->\n'
     p = sc.parse_policy(text, "x.md")
-    assert p["reply_bonus_ratio"] == 15.0
-    assert p["niche_topics"] == ["Ads"]
+    assert p["min_parent_ratio"] == 15.0
+    assert p["topics"] == ["ads"]
+    assert p["skip_dead_diary"] is False
+
+
+def test_policy_parse_rejects_reward_knobs(sc):
+    # The old design let a skill rewrite its own reward; those keys are gone.
+    for key in ("reply_bonus_ratio", "niche_topics", "dead_diary_multiplier"):
+        with pytest.raises(sc.DataError, match="unknown skillopt-policy key"):
+            sc.parse_policy(f'<!-- skillopt-policy {{"{key}": 1}} -->', "x.md")
+
+
+def test_selects_applies_each_targeting_rule(sc):
+    gold = make_row("a", rtype="reply", ratio=20, topic="ads")
+    weak = make_row("b", rtype="reply", ratio=2, topic="ads")
+    dead = make_row("c", rtype="original", topic="ads")
+    dead["features"]["viral_signal"] = "weak_dead_diary"
+    risky = make_row("d", rtype="reply", ratio=20, topic="ops")
+    risky["features"]["parent_risky"] = True
+    no_ratio = make_row("e", rtype="reply")
+    p = dict(sc.DEFAULT_POLICY)
+    assert all(sc.selects(r, p) for r in (gold, weak, dead, risky, no_ratio))
+    assert not sc.selects(weak, dict(p, min_parent_ratio=12))
+    assert not sc.selects(no_ratio, dict(p, min_parent_ratio=12))
+    assert sc.selects(dead, dict(p, min_parent_ratio=12))  # originals have no parent
+    assert not sc.selects(dead, dict(p, skip_dead_diary=True))
+    assert not sc.selects(risky, dict(p, skip_risky_parents=True))
+    assert not sc.selects(risky, dict(p, topics=["ads"]))
 
 
 def test_policy_parse_rejects_unknown_key(sc):
@@ -147,19 +161,29 @@ def test_policy_parse_rejects_bad_json(sc):
 
 
 def test_policy_parse_rejects_wrong_types(sc):
-    with pytest.raises(sc.DataError, match="niche_topics"):
-        sc.parse_policy('<!-- skillopt-policy {"niche_topics": "ads"} -->', "x.md")
+    with pytest.raises(sc.DataError, match="topics"):
+        sc.parse_policy('<!-- skillopt-policy {"topics": "ads"} -->', "x.md")
+    with pytest.raises(sc.DataError, match="skip_dead_diary"):
+        sc.parse_policy('<!-- skillopt-policy {"skip_dead_diary": 1} -->', "x.md")
 
 
-def test_bootstrap_ci_of_constant_deltas_is_degenerate_at_that_value(sc):
-    lo, hi = sc.bootstrap_ci([2.0] * 20, resamples=500, seed=1)
-    assert lo == 2.0 and hi == 2.0
+def test_replay_ci_is_zero_when_both_policies_take_the_same_rows(sc):
+    scores = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    take = [True] * 6
+    assert sc.bootstrap_replay_ci(scores, take, take, resamples=300, seed=1) == (0.0, 0.0)
 
 
-def test_bootstrap_ci_excludes_zero_for_clear_effect(sc):
-    deltas = [5.0] * 4 + [0.0] * 4
-    lo, _hi = sc.bootstrap_ci(deltas, seed=sc.seed_for([f"r{i}" for i in range(8)]))
+def test_replay_ci_excludes_zero_for_clear_effect(sc):
+    scores = [5.0] * 6 + [0.0] * 6
+    take_a = [True] * 12
+    take_b = [True] * 6 + [False] * 6
+    lo, _hi = sc.bootstrap_replay_ci(scores, take_a, take_b, seed=sc.seed_for(["x"]))
     assert lo > 0
+
+
+def test_two_sample_ci_of_constant_groups_is_degenerate(sc):
+    lo, hi = sc.bootstrap_two_sample_ci([1.0] * 8, [3.0] * 8, resamples=300, seed=1)
+    assert lo == hi == 2.0
 
 
 def test_seed_is_deterministic(sc):

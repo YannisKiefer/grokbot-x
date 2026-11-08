@@ -152,3 +152,59 @@ def test_held_out_bad_min_rows_rejected(sc, root, capsys):
     rc = sc.main(["--root", str(root), "status"])
     assert rc == 2
     assert "min_trajectories_before_edit" in capsys.readouterr().err
+
+
+def test_append_stamps_best_skill_sha(sc, root):
+    write_root(root, [], best_skill="current skill\n")
+    sc.main(["--root", str(root), "append", "--json", json.dumps(make_row("n1"))])
+    line = json.loads((root / "trajectories.jsonl").read_text().splitlines()[0])
+    assert line["skill_sha256"] == sc.sha256_file(root / "best_skill.md")
+
+
+def test_append_skill_flag_stamps_trial_skill_sha(sc, root):
+    write_root(root, [], best_skill="current skill\n")
+    trial = root / "proposed.md"
+    trial.write_text("proposed skill\n", encoding="utf-8")
+    rc = sc.main(["--root", str(root), "append", "--skill", str(trial),
+                  "--json", json.dumps(make_row("n1"))])
+    assert rc == 0
+    line = json.loads((root / "trajectories.jsonl").read_text().splitlines()[0])
+    assert line["skill_sha256"] == sc.sha256_file(trial)
+
+
+def test_append_rejects_non_string_skill_sha(sc, root, capsys):
+    row = make_row("n1")
+    row["skill_sha256"] = 5
+    rc = sc.main(["--root", str(root), "append", "--json", json.dumps(row)])
+    assert rc == 2
+    assert "skill_sha256" in capsys.readouterr().err
+
+
+def test_held_out_bad_reward_config_rejected(sc, root, capsys):
+    for body, key in (('{"niche_topics": "ads"}', "niche_topics"),
+                      ('{"author_followers": 0}', "author_followers")):
+        (root / "held_out.json").write_text(body, encoding="utf-8")
+        assert sc.main(["--root", str(root), "status"]) == 2
+        assert key in capsys.readouterr().err
+
+
+def test_status_warns_when_followers_are_missing(sc, root, capsys):
+    write_root(root, [make_row("a"), make_row("b", followers=300)])
+    sc.main(["--root", str(root), "status"])
+    assert "author_followers" in json.loads(capsys.readouterr().out)["warning"]
+    write_root(root, [make_row("a")], cfg={"author_followers": 300})
+    sc.main(["--root", str(root), "status"])
+    assert "warning" not in json.loads(capsys.readouterr().out)
+
+
+def test_status_ready_counts_scored_rows_only(sc, root, capsys):
+    rows = [make_row(f"s{i}") for i in range(3)]
+    for i in range(10):
+        r = make_row(f"p{i}")
+        r["metrics"] = {}
+        rows.append(r)
+    write_root(root, rows)
+    sc.main(["--root", str(root), "status"])
+    out = json.loads(capsys.readouterr().out)
+    assert out["n_scored"] == 3
+    assert out["ready_for_edit"] is False
