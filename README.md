@@ -31,15 +31,17 @@ Two lanes, never mixed:
 - **Publish lane.** Originals go out via the Typefully API. Replies are
   created as Typefully drafts, and a human clicks Publish NOW after
   reading them. That human click is the whole compliance model: official
-  clients only, no bot-browser compose on x.com (X's automation rules
+  clients only, no scripted browser on x.com (X's automation rules
   ban scripting the site), no bulk or unsolicited automated replies, no
   auto-likes or auto-follows. Whether posts carry the "Made with AI"
   disclosure is your choice (`X_MADE_WITH_AI` in `.env`).
 - **Learning lane.** `skillopt/best_skill.md` is the trainable state.
-  The nightly gate scores held-out trajectories, computes a bootstrap
+  The reward is fixed in code, so no edit can win by rewriting it. The
+  nightly gate judges held-out trajectories only (a live trial of the
+  proposed skill, or a replay of its targeting rule), computes a bootstrap
   90% interval on the improvement, and adopts an edit only if the lower
   bound is above zero. Everything else lands in `rejected_edits.md`.
-  You can prove two skill versions offline before touching the live one:
+  You can replay two targeting rules offline before touching the live one:
   `python3 skillopt/sleep_cycle.py replay --skill-a A.md --skill-b B.md`.
 
 ## Quickstart (5 minutes, clean machine)

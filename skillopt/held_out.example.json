@@ -1,7 +1,15 @@
 {
-  "val_ids": ["ex_002", "ex_004"],
-  "metric": "score",
-  "gate": "strict_improve_mean_val",
+  "val_ids": [
+    "ex_002",
+    "ex_004"
+  ],
   "learning_rate_max_edits": 4,
-  "min_trajectories_before_edit": 8
+  "min_trajectories_before_edit": 8,
+  "min_val_rows": 5,
+  "author_followers": 150,
+  "niche_topics": [
+    "checkout_drop",
+    "sell_through",
+    "ads"
+  ]
 }

@@ -2,7 +2,7 @@
 """Publish one original X post through Typefully.
 
 Requires YOUR_TYPEFULLY_API_KEY and YOUR_TYPEFULLY_SOCIAL_SET_ID
-(or YOUR_SOCIAL_SET_ID). Never compose on x.com from a bot browser:
+(or YOUR_SOCIAL_SET_ID). Never automate x.com in a browser:
 X's automation rules ban scripting the X website (risk of permanent
 suspension), which is the reason this path exists.
 

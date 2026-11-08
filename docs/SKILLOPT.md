@@ -23,15 +23,16 @@ night: harvest -> score train vs val -> propose <= 4 edits -> gate
 | `skillopt/best_skill.md` | deployed skill. The bot follows this tomorrow. |
 | `skillopt/trajectories.jsonl` | one line per ship. Your real data. Gitignored. |
 | `examples/trajectories.example.jsonl` | fake rows so you can see the shape. |
-| `skillopt/held_out.json` | val ids, `learning_rate_max_edits` (4), row minimums. |
+| `skillopt/held_out.json` | val ids, row minimums, `learning_rate_max_edits` (4), `niche_topics`, `author_followers`. |
 | `skillopt/rejected_edits.md` | negative buffer. Do not retry these. |
-| `skillopt/epochs/` | accept/reject receipts with before/after scores. |
+| `skillopt/epochs/` | accept/reject receipts, plus a copy of each replaced skill. |
 | `skillopt/sleep_cycle.py` | score, status, append, gate, replay. |
 
 ## Score (what "better" means)
 
 `sleep_cycle.py` rescores every row from X counters only. The reward is
-velocity, not raw views (score_version `v2-velocity-2026-11-08`):
+fixed in code (score_version `v3-fixed-reward-2026-11-08`); no skill file
+can change it, so an edit cannot win by rewriting its own reward:
 
 - latest metrics bucket wins (buckets are ordered newest-first:
   `t_night`/`t24h` > `t6h` > `t1h`/`t20m`/`t_plus_*`),
@@ -39,28 +40,63 @@ velocity, not raw views (score_version `v2-velocity-2026-11-08`):
   count (roughly "views per 1000 followers per hour", log-scaled),
 - engagement weights: likes x0.5, replies x1.5, bookmarks x2.0
   (bookmarks are the hardest counter to bait),
-- reply on a >= 20x parent: x1.35; >= 12x: x1.15; < 5x parent: x0.7,
-- author replied: x1.5, hard open: x1.1, dead diary: x0.4,
-- penalties: near-duplicate text x0.5, off-niche topic x0.5 (when the
-  skill's policy lists `niche_topics`), risky parent x0.5,
+- author replied to you: x1.5 (an outcome),
+- guards: near-duplicate text x0.5, risky parent x0.5, off-niche topic
+  x0.5 (when `held_out.json` lists `niche_topics`),
 - then divide by 10.
 
-Rows with no metrics yet are pending, not zero; they do not drag means.
+Targeting features (parent ratio, dead diary, hard open) are not rewarded.
+Where you reply is a choice; the reward only counts what happened.
+
+Follower count comes from each row's `features.author_followers`, else
+`author_followers` in `held_out.json`. Set one of them: `status` warns
+when rows have neither, because their velocity is not comparable.
+
+Rows with no metrics yet are pending, not zero; they do not drag means
+and do not count toward row minimums.
 
 ## The policy block
 
-The scorer reads one machine-readable comment per skill file:
+A skill file may carry one machine-readable targeting rule:
 
 ```
-<!-- skillopt-policy {"reply_bonus_ratio": 12, "niche_topics": ["ads", "checkout"]} -->
+<!-- skillopt-policy {"min_parent_ratio": 12, "skip_dead_diary": true, "topics": ["ads", "checkout"]} -->
 ```
 
-Known keys: `reply_bonus_ratio`, `reply_bonus_strong_ratio`,
-`low_ratio_penalty_below`, `dead_diary_multiplier`, `niche_topics`,
-`penalize_risky_parents`. Everything else in the file is prose for the
-bot. Prose-only edits replay as a tie: the gate can only measure what the
-policy block encodes. When you change scoring-relevant behavior, encode it
-here and put the reasoning in prose.
+Known keys, all about which posts to make, none about scoring:
+
+| Key | Effect |
+|---|---|
+| `min_parent_ratio` | skip replies whose parent `viral_ratio` is below this (or unknown) |
+| `skip_dead_diary` | skip rows with `viral_signal: weak_dead_diary` |
+| `skip_risky_parents` | skip replies under `parent_risky` parents |
+| `topics` | only post on these topics (rows with another topic are skipped) |
+
+Everything else in the file is prose for the bot.
+
+## Two kinds of evidence
+
+The gate judges held-out (val) rows only, and uses the strongest
+evidence it has:
+
+1. **Live trial** (any edit, including prose). Deploy the proposal for a
+   while and log those ships with its hash:
+   `sleep_cycle.py append --skill skillopt/proposed.md --json '{...}'`.
+   Log trial rows with `"split": "val"`. Once both the current skill and
+   the proposal have at least `min_val_rows` scored val rows, the gate
+   compares the two groups (two-sample bootstrap). Alternate the two
+   skills by day so time effects hit both.
+2. **Replay** (targeting edits). Each skill's policy block is applied to
+   the logged val rows: which rows would it have posted? The gate compares
+   the mean reward of the rows each one keeps. A proposal that keeps fewer
+   than `min_val_rows` rows, or under half of what the current skill keeps,
+   is `insufficient`, not a win: cherry-picking a few lucky rows proves
+   nothing. Prose-only edits take the same rows and replay as a tie; they
+   need a live trial.
+
+Replay is off-policy: it only sees posts you actually made, so it can say
+"skip weak parents" is better, never "reply under parents you never
+tried". New targets need a live trial.
 
 ## Nightly gate
 
@@ -79,13 +115,14 @@ python3 skillopt/sleep_cycle.py gate accept \
   --skill skillopt/proposed.md
 ```
 
-5. The gate refuses to run with too few rows (default 8 total, 5 scored
-   val rows; both configurable in `held_out.json`). Otherwise it scores
-   the val rows under both policy blocks and accepts only if the mean
-   improves AND the bootstrap 90% interval of the improvement is above
-   zero. On accept it replaces `best_skill.md` atomically and writes a
-   receipt with before/after means, the interval, and both file hashes.
-   On reject it books the receipt and appends to `rejected_edits.md`.
+5. The gate refuses to run with too few scored rows (default 8 total,
+   5 val; both configurable in `held_out.json`). Otherwise it accepts only
+   if the mean improves AND the bootstrap 90% interval of the improvement
+   is above zero. The receipt in `skillopt/epochs/` records the method
+   (trial or replay), row counts, means, the interval, the verdict and
+   both file hashes. On accept it saves the old skill as
+   `epochs/<ts>_best_before.md` and replaces `best_skill.md` atomically.
+   On reject it appends to `rejected_edits.md`.
 6. Rejecting an edit without proposing one is fine too:
 
 ```bash
@@ -101,8 +138,9 @@ Replay two skill versions against held-out rows, any time:
 python3 skillopt/sleep_cycle.py replay --skill-a skillopt/best_skill.md --skill-b skillopt/proposed.md
 ```
 
-Reports per-split means, delta, CI, and a verdict. Same math as the gate;
-nothing is adopted.
+Reports how many val rows each skill keeps, their means, the delta, the
+90% interval and a verdict. Same replay math as the gate; nothing is
+adopted.
 
 ## Why the controls exist
 
@@ -112,6 +150,10 @@ nothing is adopted.
   alone at n=20 is noise. The CI rule rejects edits whose gain is
   indistinguishable from zero. It does not prove causality (see
   docs/analysis/RESEARCH.md).
+- **Fixed reward:** a skill that could edit its own reward would always
+  find a way to score higher (Goodhart). The reward lives in code.
+- **Held-out only, coverage guard:** train rows wrote the edit, so they
+  cannot judge it; a policy that keeps 2 lucky rows proves nothing.
 - **Min rows:** a gate over 5 rows is a coin flip with extra steps.
 - **Rejected buffer:** the optimizer sees what already failed, so it does
   not loop.

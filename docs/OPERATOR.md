@@ -26,9 +26,9 @@ Spoken test: would the operator say this out loud?
 
 ## Publish path (locked)
 
-NEVER publish via a bot browser on x.com compose.
-ONLY: Typefully OAuth API with `made_with_ai` false, or the operator's
-own phone / laptop. Details in `PUBLISH.md`.
+NEVER automate x.com in a browser (compose, replies, likes, follows).
+ONLY: Typefully OAuth API (AI disclosure is the operator's `.env`
+setting), or the operator's own phone / laptop. Details in `PUBLISH.md`.
 
 ## Gold targeting
 

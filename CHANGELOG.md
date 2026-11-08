@@ -3,16 +3,23 @@
 ## Unreleased - 2026-11-08
 
 ### Changed
-- Reward is now verifiable (RLVR-style): score uses view velocity
-  (views normalized by follower count and post age) plus replies and
-  bookmarks; niche-match and near-duplicate penalties guard against
-  reward hacking.
-- The nightly gate now computes the decision itself: minimum row count,
-  held-out mean improvement AND bootstrap 90% interval above zero,
-  before/after logged to `skillopt/epochs/`.
+- Reward is now verifiable and fixed in code (RLVR-style): view velocity
+  (views normalized by follower count and post age) plus weighted
+  engagement, with niche, risky-parent and near-duplicate guards. Skill
+  files can no longer change their own reward.
+- Skill files carry a targeting policy (`min_parent_ratio`,
+  `skip_dead_diary`, `skip_risky_parents`, `topics`) instead of scoring
+  knobs.
+- The nightly gate computes the decision itself on held-out rows only:
+  live trial (rows stamped with the proposal's hash via `append --skill`)
+  or off-policy replay with a coverage guard; accept only when the
+  bootstrap 90% interval of the gain is above zero. Receipts go to
+  `skillopt/epochs/`, with a copy of the replaced skill.
 - New offline replay eval: `python3 skillopt/sleep_cycle.py replay --skill-a A --skill-b B`
-  reports which skill wins on held-out rows before anything goes live.
+  reports which targeting rule wins on held-out rows before anything goes live.
 - `made_with_ai` is the operator's choice (`X_MADE_WITH_AI` env, default off).
+- Publish skill renamed `x-publish`; likes, bookmarks and follows are the
+  operator's own clicks, never automated (X automation rules).
 - Every trust boundary validates input: trajectory lines, append JSON,
   publish text length, reply-to URL, env placeholders - clear errors,
   no raw tracebacks.

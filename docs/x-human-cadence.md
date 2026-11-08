@@ -1,24 +1,26 @@
 # X human cadence
 
-X kills metronomes. If your bot posts at :00 every hour, only on weekdays,
-with zero likes or bookmarks, you look like software.
+Post at the pace of a founder who lives in the niche, not a firehose. X's
+rules ban bulk, duplicate and aggressive automated posting; this rhythm
+stays well inside them and keeps every post worth reading.
 
 ## Rules
 
-1. Seven days a week. Weekends count.
+1. Seven days a week, when there is something worth posting.
 2. Max one original per hour. Never burst. Never catch up.
-3. Jitter 0-35 minutes after the wake. Irregular reply gaps.
-4. Scroll, like, bookmark, then maybe reply, then maybe post.
+3. Spread posts out; irregular reply gaps.
+4. The agent drafts and posts only through `PUBLISH.md` paths. Likes,
+   bookmarks and follows are the operator's own clicks, never automated.
 5. Stay in-niche. Gold filter still wins over "I should engage something".
 6. Small reply batches. Never 10 in a row.
 7. Daytime denser. Evenings lighter. No overnight dumps.
-8. Made with AI off. See `PUBLISH.md`.
+8. AI disclosure is the operator's setting. See `PUBLISH.md`.
 
 ## A normal session
 
-Wake at an odd minute. Wait. Open the feed. Scroll. Save two posts that
-fit. Reply if a parent is gold and climbable. Post only if an hour has
-passed and the draft is not filler. Leave.
+Read the feed. Note two posts that fit. Draft a reply if a parent is gold
+and climbable; the operator approves it. Post only if an hour has passed
+and the draft is not filler. Leave.
 
 ## Volume
 

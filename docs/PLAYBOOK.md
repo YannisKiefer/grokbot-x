@@ -54,12 +54,12 @@ On a cold account, originals are optional. Replies are not.
 
 ## 3. Publish the right way
 
-- Original -> Typefully API, `made_with_ai: false`, `publish_at: "now"`.
+- Original -> Typefully API, `publish_at: "now"`, disclosure per `.env`.
 - Reply -> Typefully draft with `reply_to_url`, then Publish NOW in the
   Typefully UI.
-- Never x.com compose from a bot browser.
+- Never automate x.com in a browser (no compose, likes or follows).
 
-See `PUBLISH.md`. One original per hour. Jitter 0-35 min. Weekends on.
+See `PUBLISH.md`. One original per hour, spread out. Weekends on.
 
 ## 4. Log the ship
 
@@ -83,7 +83,7 @@ The bot should get harder to fool over time. That is the product.
 ## Daily shape (adapt to YOUR_TIMEZONE)
 
 - Morning: scout overnight climbers. Reply if gold. Maybe one original.
-- Midday: second scout. No gold? Do not pad. Follow ICP. Leave.
+- Midday: second scout. No gold? Do not pad. Flag ICP accounts for the operator to follow. Leave.
 - Evening: one more wave in the timezone where your buyers scroll.
 - Night: metrics + SkillOpt. No posting dump.
 

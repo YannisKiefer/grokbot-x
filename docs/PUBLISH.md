@@ -1,27 +1,19 @@
 # Publish: Typefully originals vs replies
 
-Read this once. Then never compose on x.com from a bot browser again.
+Read this once. Publish only through official API clients; never automate x.com.
 
 ## Why API-only
 
-Two reasons, one proven, one reported:
-
-1. Official rule (this is why the path exists): X's automation rules ban
-   non-API automation, "such as scripting the X website", and say it may
-   result in permanent suspension. See
-   https://help.x.com/en/rules-and-policies/x-automation.
-2. Community-reported: users have seen **Made with AI** stamped on posts
-   composed from bot browsers (headless, Playwright, datacenter IPs) even
-   with disclosure off. There is no official X documentation of that
-   fingerprinting; treat it as a report, not a rule. Officially, the
-   label targets AI-generated media via composer disclosure and automatic
-   detection of AI images/video.
+X's automation rules ban non-API automation, "such as scripting the X
+website", ban automated likes and follows, and say breaking them may mean
+permanent suspension. See
+https://help.x.com/en/rules-and-policies/x-automation.
 
 Publish only through official OAuth clients (Typefully connected to
 @YOUR_HANDLE on the operator's own device), or the operator's own
-phone/laptop. Whether a post carries the "Made with AI" disclosure is the
+phone/laptop. Whether a post carries X's "Made with AI" disclosure is the
 operator's choice: set `X_MADE_WITH_AI=true` in `.env` to disclose
-(default is off).
+(default is off). The helper scripts send whatever `.env` says.
 
 ## One-time setup
 
@@ -54,14 +46,14 @@ curl -sS -X POST \
       "x": {
         "enabled": true,
         "posts": [{"text": "your copy here"}],
-        "settings": {"made_with_ai": false}
+        "settings": {"made_with_ai": MADE_WITH_AI}
       }
     },
     "publish_at": "now"
   }'
 ```
 
-`publish_at: "now"` is async. Poll `GET /v2/social-sets/{id}/drafts/{draft_id}`
+`MADE_WITH_AI` is `true` or `false`, the operator's choice. `publish_at: "now"` is async. Poll `GET /v2/social-sets/{id}/drafts/{draft_id}`
 until `publish_state` is `finished`, then read `x_published_url`.
 
 Helper: `python3 scripts/publish_original.py --text "your copy here"`
@@ -84,7 +76,7 @@ curl -sS -X POST \
         "enabled": true,
         "posts": [{"text": "your reply here"}],
         "settings": {
-          "made_with_ai": false,
+          "made_with_ai": MADE_WITH_AI,
           "reply_to_url": "https://x.com/someone/status/PARENT_ID"
         }
       }
@@ -100,22 +92,22 @@ Then open the returned private URL and publish by hand.
 
 | Path | Originals | Replies |
 |---|---|---|
-| Typefully API `publish_at=now`, `made_with_ai=false` | yes | no |
+| Typefully API `publish_at=now` | yes | no |
 | Typefully draft + UI Publish NOW | yes | yes |
 | Operator phone / normal browser | yes | yes |
-| Bot browser on x.com compose | never | never |
+| Any scripted browser on x.com | never | never |
 | Schedule a reply | | never |
 
-Likes and bookmarks from a bot browser are fine. Compose is not.
+Likes, bookmarks and follows are the operator's own clicks. Never automate
+them: X bans automated likes and follows.
 
 ## Typefully free tier
 
 Free plans cap monthly publishes. When you hit the cap, draft only.
 Do not invent a second publish path to "keep shipping".
 
-## If the AI label appears
+## If X labels a post
 
-The label means the session looked automated. Stop that publish path
-(permanent-suspension risk beats any reach), figure out which client
-produced it, and stay on official clients. Keeping or deleting the post
-is the operator's call. Do not test-spam to debug.
+X decides its own labels. Leave the label and the post as they are (the
+operator may delete a post if they want). Do not try to work around a
+label, and do not test-spam to debug.

@@ -63,8 +63,8 @@ worth answering.
 - None of this guarantees views.
 - A bad topic does not become useful because you formatted it correctly.
 
-That is what the nightly gate is for: propose an edit, replay it on
-held-out rows, keep it only if the numbers move. Format advice is a
+That is what the nightly gate is for: propose an edit, run it as a live
+trial (`append --skill`), keep it only if the held-out numbers move. Format advice is a
 hypothesis; `trajectories.jsonl` is the verdict.
 
 ## What not to do
