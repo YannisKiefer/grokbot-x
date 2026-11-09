@@ -107,7 +107,7 @@ def test_gate_judges_held_out_rows_only(sc, root):
     # gold, so on held-out data both policies take the same rows: a tie.
     rows = [make_row(f"tw{i}", views=10, ratio=2, split="train", text=f"weak train {i}")
             for i in range(10)]
-    rows += [make_row(f"vg{i}", views=4000, ratio=20, split="val", text=f"gold val {i} ads")
+    rows += [make_row(f"vg{i}", views=4000, ratio=20, split="val", text=f"gold val {i} growth")
              for i in range(6)]
     write_root(root, rows, best_skill=NO_POLICY)
     proposed = root / "proposed.md"
@@ -140,9 +140,9 @@ def test_noisy_improvement_with_ci_across_zero_is_rejected(sc, root):
     rows = []
     for i in range(8):
         views = 5000 if i % 2 == 0 else 0
-        rows.append(make_row(f"vs{i}", views=views, ratio=20, split="val", text=f"swing {i} ads"))
+        rows.append(make_row(f"vs{i}", views=views, ratio=20, split="val", text=f"swing {i} hi"))
     for i in range(6):
-        rows.append(make_row(f"vm{i}", views=5, ratio=2, split="val", text=f"steady {i} ops"))
+        rows.append(make_row(f"vm{i}", views=5, ratio=2, split="val", text=f"steady {i} misc"))
     write_root(root, rows, best_skill=NO_POLICY)
     proposed = root / "proposed.md"
     proposed.write_text(GOLD_ONLY, encoding="utf-8")
@@ -159,11 +159,11 @@ def test_live_trial_proves_a_prose_only_edit(sc, root):
     proposed_text = "rewritten hooks, same targeting\n"
     rows = []
     for i in range(6):
-        r = make_row(f"va{i}", views=300 + i, split="val", text=f"old skill post {i} ads")
+        r = make_row(f"va{i}", views=300 + i, split="val", text=f"old skill post {i} growth")
         r["skill_sha256"] = sha(NO_POLICY)
         rows.append(r)
     for i in range(6):
-        r = make_row(f"vb{i}", views=3000 + i, split="val", text=f"new skill post {i} ops")
+        r = make_row(f"vb{i}", views=3000 + i, split="val", text=f"new skill post {i} misc")
         r["skill_sha256"] = sha(proposed_text)
         rows.append(r)
     write_root(root, rows, best_skill=NO_POLICY)
@@ -323,7 +323,7 @@ def test_status_top_lists_train_rows_only(sc, root, capsys):
 def test_replay_counts_as_an_attempt(sc, root, capsys):
     write_root(root, val_rows(), best_skill=NO_POLICY)
     peek = root / "peek.md"
-    peek.write_text('<!-- skillopt-policy {"topics": ["ads"]} -->', encoding="utf-8")
+    peek.write_text('<!-- skillopt-policy {"topics": ["growth"]} -->', encoding="utf-8")
     sc.main(["--root", str(root), "replay", "--skill-a", str(root / "best_skill.md"),
              "--skill-b", str(peek)])
     capsys.readouterr()
@@ -337,11 +337,11 @@ def trial_rows(a_views, b_views, a_ts="2026-09-02T10:00:00Z", b_ts="2026-09-01T1
                split="val", proposed="rewritten hooks\n"):
     rows = []
     for i, v in enumerate(a_views):
-        r = make_row(f"va{i}", views=v, split="val", text=f"old skill post {i} ads")
+        r = make_row(f"va{i}", views=v, split="val", text=f"old skill post {i} growth")
         r["skill_sha256"], r["ts"] = sha(NO_POLICY), a_ts
         rows.append(r)
     for i, v in enumerate(b_views):
-        r = make_row(f"vb{i}", views=v, split=split, text=f"new skill post {i} ops")
+        r = make_row(f"vb{i}", views=v, split=split, text=f"new skill post {i} misc")
         r["skill_sha256"], r["ts"] = sha(proposed), b_ts
         rows.append(r)
     return rows

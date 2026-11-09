@@ -126,11 +126,11 @@ def test_append_stamps_score_and_version(sc, root, capsys):
 
 
 def test_append_reports_duplicate_penalty(sc, root):
-    write_root(root, [make_row("a1", text="the checkout drop kills paid conversion")])
+    write_root(root, [make_row("a1", text="the weak first line kills reach")])
     rc = sc.main(
         [
             "--root", str(root), "append",
-            "--json", json.dumps(make_row("a2", text="the checkout drop kills paid conversion")),
+            "--json", json.dumps(make_row("a2", text="the weak first line kills reach")),
         ]
     )
     assert rc == 0
@@ -181,7 +181,7 @@ def test_append_rejects_non_string_skill_sha(sc, root, capsys):
 
 
 def test_held_out_bad_reward_config_rejected(sc, root, capsys):
-    for body, key in (('{"niche_topics": "ads"}', "niche_topics"),
+    for body, key in (('{"niche_topics": "growth"}', "niche_topics"),
                       ('{"author_followers": 0}', "author_followers")):
         (root / "held_out.json").write_text(body, encoding="utf-8")
         assert sc.main(["--root", str(root), "status"]) == 2

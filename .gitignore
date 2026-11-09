@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+
+# Your filled-in profile (single source of truth, never published)
+profile.md
 *.pem
 *.key
 *.p12

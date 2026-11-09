@@ -7,10 +7,10 @@ description: >-
 ---
 # X human cadence
 
-The account is the operator's voice. Post at the pace a founder who lives
-in the niche would, so followers get signal, not a firehose. X's rules
-ban bulk, duplicate and aggressive automated posting; this rhythm stays
-well inside them.
+The account is the operator's voice (see `profile.md`). Post at the pace
+a person who lives in the niche would, so followers get signal, not a
+firehose. X's rules ban bulk, duplicate and aggressive automated posting;
+this rhythm stays well inside them.
 
 ## Hard rules
 
@@ -21,8 +21,9 @@ well inside them.
 4. The agent drafts and posts through `skills/x-publish` only. Likes,
    bookmarks and follows are the operator's own clicks: never automate them
    (X bans automated likes and follows).
-5. Engage what resonates with YOUR_PRODUCT and your ICP niche. Skip random
-   off-niche virality. See `skillopt/best_skill.md`.
+5. Engage what resonates with the offer and audience in `profile.md`
+   (its niche topics and off-limits list decide what is on-niche). Skip
+   random off-niche virality. See `skillopt/best_skill.md`.
 6. Replies in small batches with gaps. Never 10+ in a row.
 7. Daytime denser, evenings lighter, no overnight dumps.
 8. AI disclosure is the operator's setting (`X_MADE_WITH_AI`). Never
@@ -40,5 +41,5 @@ well inside them.
 
 ## Success
 
-Reads like a founder living in the niche all week: few posts, each one
+Reads like a person living in the niche all week: few posts, each one
 worth reading.

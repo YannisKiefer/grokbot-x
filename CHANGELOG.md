@@ -1,6 +1,30 @@
 # Changelog
 
-## Unreleased - 2026-11-08
+## Unreleased - 2026-11-09
+
+### Changed
+- The kit is niche-agnostic. One profile drives everything: copy
+  `profile.example.md` to `profile.md` (gitignored) and fill it; skills,
+  docs, prompts and the starter skill read niche, audience, topics and
+  voice from there instead of assuming an ecommerce niche.
+- `docs/BRAND-BIBLE.template.md` rewritten as a short generic worksheet
+  (questions only, no positioning).
+- Example trajectories and scorer examples are niche-neutral; three
+  clearly fictional example profiles (indie SaaS, fitness coach,
+  ecommerce brand) live under `examples/profiles/`.
+- `held_out.example.json` tells you to copy `niche_topics` from
+  `profile.md`. Scorer/gate math unchanged.
+
+### Added
+- `tests/test_generic.py`: guard test that fails on real company/person
+  mentions outside the branding surfaces (README, site and docs/brand
+  keep their existing owner-approved branding) and on ecommerce
+  vocabulary outside `examples/profiles/`, with a small reasoned
+  allowlist.
+
+## 2026-11-08
+
+### Changed
 
 ### Changed
 - Reward is now verifiable and fixed in code (RLVR-style): view velocity

@@ -8,19 +8,20 @@ description: >-
 # X unslop humanizer (tight pass)
 
 Same rules as the primary unslop skill. Use this as a second pass when the
-draft still reads as filler or forced casual.
+draft still reads as filler or forced casual. Voice, banned words and
+allowed slang come from `profile.md`.
 
 Ban fake-clever filler:
 
 - "the X is the real story"
 - "Y vanity ends there"
-- tidy noun-stack labels ("reached-checkout-to-paid gap")
+- tidy noun-stack labels ("the reach-to-buyer gap")
 - polished parallel punchlines
 
 Write like the operator on a phone: direct, blunt, slightly non-native ok,
-uneven lines. imo allowed. No tbh/ngl/lowkey stacks.
+uneven lines. Only the slang `profile.md` allows. No tbh/ngl/lowkey stacks.
 
-BAD: the reached checkout to paid gap is the real story. sessions vanity ends there
-GOOD: most people stare at sessions. the drop from checkout started to paid is where it actually dies
+BAD: the hook is the real story. everything else is vanity
+GOOD: write the first line last. most posts die exactly there
 
 Spoken test before every ship.

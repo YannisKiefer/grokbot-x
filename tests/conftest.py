@@ -38,7 +38,7 @@ def root(tmp_path):
 
 def make_row(rid, rtype="reply", views=100, likes=0, replies=0, bookmarks=0,
              ratio=None, split="train", followers=None, bucket="t_night",
-             topic=None, text="a plain sentence about ops", **extra):
+             topic=None, text="a plain sentence about the topic", **extra):
     row = {
         "id": rid,
         "ts": "2026-08-20T10:12:00Z",

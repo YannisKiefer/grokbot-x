@@ -10,9 +10,9 @@ GOLD_ONLY = 'prose\n<!-- skillopt-policy {"min_parent_ratio": 12} -->\n'
 def rows():
     out = []
     for i in range(6):
-        out.append(make_row(f"vg{i}", views=4000, ratio=20, split="val", text=f"gold {i} ads"))
+        out.append(make_row(f"vg{i}", views=4000, ratio=20, split="val", text=f"gold {i} growth"))
     for i in range(4):
-        out.append(make_row(f"vw{i}", views=200, ratio=2, split="val", text=f"weak {i} ops"))
+        out.append(make_row(f"vw{i}", views=200, ratio=2, split="val", text=f"weak {i} misc"))
     for i in range(3):
         out.append(make_row(f"vt{i}", views=9000, ratio=2, split="train", text=f"train {i} pdp"))
     return out

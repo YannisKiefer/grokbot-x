@@ -30,7 +30,7 @@ reflection. This file does the math and the bookkeeping. No network calls.
 
 Each skill file may carry one machine-readable targeting policy comment:
 
-    <!-- skillopt-policy {"min_parent_ratio": 12, "topics": ["ads"]} -->
+    <!-- skillopt-policy {"min_parent_ratio": 12, "topics": ["slug1"]} -->
 
 Paths are relative to this file, or override with SKILLOPT_DIR / --root
 (--root works before or after the subcommand).
