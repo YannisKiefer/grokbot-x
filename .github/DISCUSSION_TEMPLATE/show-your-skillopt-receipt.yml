@@ -1,0 +1,38 @@
+title: "Show your SkillOpt receipt"
+labels: ["Show and tell"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One gate decision per post, please: what the nightly gate accepted or
+        rejected, and the numbers behind it. Real (anonymized) receipts beat
+        opinions — that is the whole point of this kit.
+        Replace every real handle, URL, and metric you would not post in
+        public with `YOUR_*` placeholders.
+  - type: dropdown
+    id: verdict
+    attributes:
+      label: Gate verdict
+      options:
+        - Accepted (kept the edit)
+        - Rejected (edit did not beat held-out data)
+    validations:
+      required: true
+  - type: textarea
+    id: receipt
+    attributes:
+      label: The receipt
+      description: Skill file + proposal in one or two lines, held-out numbers (baseline vs proposed), and the gate's reason.
+      placeholder: |
+        Skill: x-human-cadence, proposed min_parent_ratio 2.0 -> 3.0
+        Held-out replay: baseline 0.41 view-velocity vs proposed 0.47, bootstrap LB +0.03
+        Kept: lower bound above zero, coverage guard passed
+    validations:
+      required: true
+  - type: textarea
+    id: lesson
+    attributes:
+      label: What you do differently now
+      description: One sentence. What did the number change in your posting?
+    validations:
+      required: false

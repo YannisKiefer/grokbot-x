@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: >-
+  If grokbot-x earns a star from you, that is payment enough.
+  If you use it in something you ship, cite it — and post your SkillOpt
+  receipt in Discussions.
+title: grokbot-x
+abbrev: grokbot-x
+type: software
+authors:
+  - given-names: Yannis
+    family-names: Kiefer
+    website: "https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=citation"
+repository-code: "https://github.com/YannisKiefer/grokbot-x"
+url: "https://yanniskiefer.github.io/grokbot-x/"
+abstract: >-
+  Self-learning X growth agent for Grok Bot: scouts posts with views far
+  above author follower counts, drafts replies and originals in the
+  operator's voice, publishes through the official Typefully API with a
+  human approving every reply, and runs a nightly SkillOpt gate that keeps
+  a skill edit only when held-out data proves it better. Python standard
+  library only.
+keywords:
+  - x
+  - twitter
+  - grok-bot
+  - ai-agents
+  - agent-skills
+  - typefully
+  - prompt-optimization
+  - skillopt
+  - growth
+license: MIT
+version: 0.1.0
+date-released: "2026-11-08"
