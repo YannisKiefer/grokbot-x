@@ -216,3 +216,24 @@ def test_non_numeric_followers_rejected(sc, root, capsys):
     write_root(root, [row])
     assert sc.main(["--root", str(root), "status"]) == 2
     assert "author_followers" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_validate_row_rejects_non_finite_numbers(sc, bad):
+    with pytest.raises(sc.DataError, match="views"):
+        sc.validate_row(make_row("x", views=bad), "t")
+    with pytest.raises(sc.DataError, match="viral_ratio"):
+        sc.validate_row(make_row("x", ratio=bad), "t")
+
+
+def test_non_finite_literals_in_jsonl_and_policy_rejected(sc, tmp_path):
+    p = tmp_path / "trajectories.jsonl"
+    p.write_text(
+        '{"id": "a", "type": "reply", "metrics": {"t1h": {"views": 1e999}}}\n', encoding="utf-8"
+    )
+    (row,) = sc.load_traj(p)
+    with pytest.raises(sc.DataError, match="finite"):
+        sc.validate_row(row, "t")
+    with pytest.raises(sc.DataError, match="min_parent_ratio"):
+        sc.parse_policy('<!-- skillopt-policy {"min_parent_ratio": NaN} -->', "t")
+    assert sc._num(float("nan"), 1.0) == 1.0

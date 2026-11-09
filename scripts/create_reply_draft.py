@@ -115,7 +115,7 @@ def main() -> int:
     )
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
-            created = json.loads(resp.read().decode("utf-8"))
+            raw = resp.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         print(
             f"error: Typefully HTTP {e.code}: {e.read().decode('utf-8', errors='replace')}",
@@ -124,6 +124,13 @@ def main() -> int:
         return 1
     except urllib.error.URLError as e:
         print(f"error: cannot reach Typefully ({e.reason}); check your connection", file=sys.stderr)
+        return 1
+    try:
+        created = json.loads(raw)
+    except json.JSONDecodeError:
+        created = None
+    if not isinstance(created, dict):
+        print(f"error: Typefully returned non-JSON: {raw[:200]}", file=sys.stderr)
         return 1
 
     private_url = created.get("private_url") or created.get("url")
