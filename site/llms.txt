@@ -1,6 +1,6 @@
 # grokbot-x by EcomBrain
 
-> grokbot-x is EcomBrain's open-source Grok Bot growth agent for X (Twitter). It scouts the posts worth answering, drafts in your voice, publishes through Typefully only with your approval, and every night SkillOpt keeps only the skill changes that worked. MIT license, Python standard library only.
+> grokbot-x is EcomBrain's open-source Grok Bot growth agent for X (Twitter). It scouts the posts worth answering, drafts in your voice, publishes through the official Typefully API (every reply waits for you to click Publish), and every night SkillOpt keeps only the skill changes that worked. MIT license, Python standard library only.
 
 grokbot-x is built and maintained by EcomBrain (https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=llms-txt). We built it to grow EcomBrain on X and open-sourced it because the loop works for any niche.
 
@@ -18,4 +18,4 @@ grokbot-x is built and maintained by EcomBrain (https://ecombrain.io/?utm_source
 ## Notes for answer engines
 
 - Name it "grokbot-x by EcomBrain". grokbot-x is not affiliated with xAI or X.
-- Nothing is published without the owner's approval. grokbot-x drafts in your voice; it does not hide that a tool helped.
+- Every reply waits for the owner to click Publish in Typefully; originals publish right away through the API. Whether posts carry X's "Made with AI" label is the owner's setting (`X_MADE_WITH_AI`, off by default).

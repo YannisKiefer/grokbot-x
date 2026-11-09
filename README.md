@@ -27,7 +27,7 @@ numbers prove the edit helped. Built for tired founders. Dumbed down on purpose.
 
 | | |
 |---|---|
-| **You approve every reply** | Replies land as Typefully drafts. Nothing reaches X until you click Publish. |
+| **You approve every reply** | Replies land as Typefully drafts. A reply reaches X only when you click Publish. Originals publish straight through the API. |
 | **Official API only** | Typefully's API. No scripted browser on x.com, no auto-likes, no auto-follows. |
 | **Proof before change** | A skill edit is kept only if held-out data shows it does better. Everything else is logged as rejected. |
 | **Small and readable** | Python 3.10+ standard library, zero runtime dependencies, tested in CI on 3.10 and 3.14. |
@@ -49,7 +49,7 @@ numbers prove the edit helped. Built for tired founders. Dumbed down on purpose.
 |---|---|
 | 1. Scout | Find posts with views far above the author's follower count: the gold. |
 | 2. Draft | Write the reply or post in your voice: hook, proof, body. |
-| 3. Approve | It lands in Typefully. You read it and publish. |
+| 3. Approve | A reply lands in Typefully as a draft; you read it and publish. Originals go out through the API right away. |
 | 4. Log | Each shipped post becomes one JSON line with its results. |
 | 5. Learn | Every night SkillOpt tests one skill edit on held-out data and keeps it only if it wins. |
 
