@@ -4,7 +4,6 @@ message: >-
   If you use it in something you ship, cite it — and post your SkillOpt
   receipt in Discussions.
 title: grokbot-x
-abbrev: grokbot-x
 type: software
 authors:
   - given-names: Yannis

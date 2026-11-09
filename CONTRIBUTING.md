@@ -28,8 +28,8 @@ No runtime dependencies. If your change needs one, it is probably too big.
 ## Discussions
 
 Questions and wins go to Discussions. If the nightly gate accepted or
-rejected one of your skill edits, post it in "Show your SkillOpt receipt"
-with the held-out numbers (placeholders for anything private). Receipts
+rejected one of your skill edits, post it in [Show and tell](https://github.com/YannisKiefer/grokbot-x/discussions/categories/show-and-tell)
+(the SkillOpt receipt form) with the held-out numbers (placeholders for anything private). Receipts
 from other niches are how the defaults get better.
 
 ## Good first issues
