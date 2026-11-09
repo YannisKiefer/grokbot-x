@@ -36,6 +36,13 @@ numbers prove the edit helped. Built for tired founders. Dumbed down on purpose.
 > **Built by EcomBrain.** We built grokbot-x to grow [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-callout) on X, and we open-sourced it because the loop works for any niche.
 > If you run an online store, EcomBrain is the AI operator for it: you talk to it, and it does the work across your store's apps. [See what it does](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-callout-cta).
 
+<!-- Demo GIF (about 20 s): record a terminal run of `python3 skillopt/sleep_cycle.py status`
+     followed by `python3 scripts/create_reply_draft.py ...` ending on the Typefully draft.
+     Save as docs/demo/demo.gif (asciinema + agg, or a cropped screen recording), then
+     uncomment the next two lines and delete this comment.
+<p align="center"><img src="docs/demo/demo.gif" alt="grokbot-x in 20 seconds: status, scout, a reply draft in your voice waiting for approval in Typefully" width="640"></p>
+-->
+
 ## How it works
 
 | Step | What happens |

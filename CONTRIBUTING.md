@@ -25,6 +25,18 @@ No runtime dependencies. If your change needs one, it is probably too big.
    before you add, no new dependency for a few lines.
 5. `docs/analysis/*.md` are working documents - update, don't canonize.
 
+## Discussions
+
+Questions and wins go to Discussions. If the nightly gate accepted or
+rejected one of your skill edits, post it in "Show your SkillOpt receipt"
+with the held-out numbers (placeholders for anything private). Receipts
+from other niches are how the defaults get better.
+
+## Good first issues
+
+Look for the `good first issue` label before opening a PR; if none fits,
+open an issue first so the smallest change can be agreed in one round.
+
 ## Commits
 
 Small, imperative subject lines ("Fix gate row check", not "updates").
