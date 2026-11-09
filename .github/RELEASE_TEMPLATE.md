@@ -21,4 +21,4 @@
 ## Links
 
 - Changelog: CHANGELOG.md
-- SkillOpt receipts: the "Show your SkillOpt receipt" discussion category
+- SkillOpt receipts: the [Show and tell](https://github.com/YannisKiefer/grokbot-x/discussions/categories/show-and-tell) discussion category

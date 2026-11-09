@@ -93,10 +93,13 @@ def api(method: str, url: str, key: str, body: dict | None = None) -> dict:
         print(f"error: cannot reach Typefully ({e.reason}); check your connection", file=sys.stderr)
         sys.exit(1)
     try:
-        return json.loads(raw)
+        obj = json.loads(raw)
     except json.JSONDecodeError:
+        obj = None
+    if not isinstance(obj, dict):
         print(f"error: Typefully returned non-JSON: {raw[:200]}", file=sys.stderr)
         sys.exit(1)
+    return obj
 
 
 def main() -> int:

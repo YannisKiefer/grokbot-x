@@ -275,3 +275,25 @@ def test_reply_draft_made_with_ai_operator_choice(rep, env, monkeypatch):
     ft = FakeTypefully(post={"id": "d2", "private_url": "https://typefully.com/d/d2"})
     assert run_reply(rep, monkeypatch, ft) == 0
     assert ft.last_post["platforms"]["x"]["settings"]["made_with_ai"] is True
+
+
+class RawResp(FakeResp):
+    def read(self):
+        return self._payload
+
+
+@pytest.mark.parametrize("body", [b"[1, 2]", b"null", b'"ok"'])
+def test_publish_non_mapping_json_response(pub, env, monkeypatch, capsys, body):
+    monkeypatch.setattr(pub.urllib.request, "urlopen", lambda req, timeout=60: RawResp(body))
+    monkeypatch.setattr("sys.argv", ["prog", "--text", "hi", "--no-wait"])
+    with pytest.raises(SystemExit) as e:
+        pub.main()
+    assert e.value.code == 1
+    assert "non-JSON" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("body", [b"<html>gateway</html>", b"[1, 2]", b"null"])
+def test_reply_draft_bad_or_non_mapping_json(rep, env, monkeypatch, capsys, body):
+    rc = run_reply(rep, monkeypatch, lambda req, timeout=60: RawResp(body))
+    assert rc == 1
+    assert "non-JSON" in capsys.readouterr().err

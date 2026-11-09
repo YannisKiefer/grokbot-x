@@ -148,6 +148,11 @@ def load_traj(traj: Path) -> list[dict]:
     return rows
 
 
+def _bad_num(v) -> bool:
+    """Not a finite number >= 0. json.loads accepts NaN, Infinity and 1e999."""
+    return isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0
+
+
 def validate_row(row: dict, where: str) -> None:
     rid = row.get("id")
     if not isinstance(rid, str) or not rid.strip():
@@ -166,20 +171,20 @@ def validate_row(row: dict, where: str) -> None:
                 v = b.get(f)
                 if v is None:
                     continue
-                if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0:
+                if _bad_num(v):
                     raise DataError(
-                        f"{where}: metrics.{k}.{f} must be a number >= 0 (got {v!r})"
+                        f"{where}: metrics.{k}.{f} must be a finite number >= 0 (got {v!r})"
                     )
     feat = row.get("features")
     if feat is not None and not isinstance(feat, dict):
         raise DataError(f"{where}: 'features' must be an object")
     vr = (feat or {}).get("viral_ratio")
-    if vr is not None and (isinstance(vr, bool) or not isinstance(vr, (int, float)) or vr < 0):
-        raise DataError(f"{where}: features.viral_ratio must be a number >= 0 (got {vr!r})")
+    if vr is not None and _bad_num(vr):
+        raise DataError(f"{where}: features.viral_ratio must be a finite number >= 0 (got {vr!r})")
     fol = (feat or {}).get("author_followers")
-    if fol is not None and (isinstance(fol, bool) or not isinstance(fol, (int, float)) or fol < 0):
+    if fol is not None and _bad_num(fol):
         raise DataError(
-            f"{where}: features.author_followers must be a number >= 0 (got {fol!r})"
+            f"{where}: features.author_followers must be a finite number >= 0 (got {fol!r})"
         )
 
 
@@ -219,7 +224,7 @@ def parse_policy(text: str, where: str) -> dict:
                 f"(known keys: {', '.join(sorted(DEFAULT_POLICY))})"
             )
         if k in _POLICY_NUM:
-            if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0:
+            if _bad_num(v):
                 raise DataError(f"{where}: skillopt-policy '{k}' must be a number >= 0")
             policy[k] = float(v)
         elif k in _POLICY_BOOL:
@@ -260,7 +265,7 @@ def parse_policy_file(path: Path) -> dict:
 
 
 def _num(v, default: float) -> float:
-    if isinstance(v, bool) or not isinstance(v, (int, float)):
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
         return default
     return float(v)
 
@@ -458,7 +463,7 @@ def load_config(p: dict[str, Path]) -> dict:
     ):
         raise DataError(f"{held.name}: 'niche_topics' must be a list of strings")
     fol = cfg.get("author_followers")
-    if fol is not None and (isinstance(fol, bool) or not isinstance(fol, (int, float)) or fol < 1):
+    if fol is not None and (_bad_num(fol) or fol < 1):
         raise DataError(f"{held.name}: 'author_followers' must be a number >= 1")
     return cfg
 
