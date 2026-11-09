@@ -36,7 +36,7 @@ numbers prove the edit helped. Built for tired founders. Dumbed down on purpose.
 > **Built by EcomBrain.** We built grokbot-x to grow [EcomBrain](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-callout) on X, and we open-sourced it because the loop works for any niche.
 > If you run an online store, EcomBrain is the AI operator for it: you talk to it, and it does the work across your store's apps. [See what it does](https://ecombrain.io/?utm_source=github&utm_medium=grokbot-x&utm_campaign=oss&utm_content=readme-callout-cta).
 
-<p align="center"><img src="docs/demo/demo.gif" alt="grokbot-x in 20 seconds: check skill status, a reply draft command that refuses to send without a Typefully key, and the gate refusing an unproven edit" width="640"></p>
+<p align="center"><img src="docs/demo/demo.gif" alt="grokbot-x in 20 seconds: check skill status, a reply command that will not create a Typefully draft without an API key, and an offline replay that reports too few held-out rows to test an edit" width="640"></p>
 
 ## How it works
 
