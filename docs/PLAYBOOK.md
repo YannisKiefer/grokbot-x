@@ -4,9 +4,12 @@ You are tired. You have an X handle and a product. This is the whole job.
 
 ## 0. Fill the blanks
 
-1. Copy `.env.example` to `.env`. Set `YOUR_HANDLE`,
+1. Copy `profile.example.md` to `profile.md` and fill it: who you are,
+   audience, niche topics, off-limits topics, voice, languages, timezone,
+   posting limits, proof, example posts. Everything else in the kit reads
+   from that one file. Works for any niche.
+2. Copy `.env.example` to `.env`. Set `YOUR_HANDLE`,
    `YOUR_TYPEFULLY_API_KEY`, `YOUR_TYPEFULLY_SOCIAL_SET_ID`.
-2. Fill `docs/BRAND-BIBLE.template.md` so the bot knows what you sell.
 3. Copy `examples/best_skill.starter.md` over `skillopt/best_skill.md`
    if you want a clean start.
 4. Install the five files under `skills/` into your Grok Bot / agent
@@ -41,13 +44,14 @@ Views beat followers. Always.
 
 Load `skills/x-unslop-humanizer` (writing-quality rules). Write the reply
 or original. Run the spoken test. Kill em dashes. Kill "the X is the real story".
-Name a real object (checkout, refund, pixel, sku).
+Name a real object from your niche topics in `profile.md` (a thing your
+audience touches, not a category word).
 
 Structure per `x-post-guide.md`: clear hook > useful body > real proof >
 cut the filler. Line 1 says what the reader gets. Line 2 proves it.
 
-Replies: add the missing next step. Do not plug YOUR_PRODUCT unless
-you earned it.
+Replies: add the missing next step. Do not plug your offer (see
+`profile.md`) unless you earned it.
 
 Originals: only if you have a gold source and a hard first line.
 On a cold account, originals are optional. Replies are not.

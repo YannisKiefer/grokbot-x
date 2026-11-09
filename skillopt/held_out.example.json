@@ -1,4 +1,5 @@
 {
+  "_readme": "Copy to skillopt/held_out.json, then edit. niche_topics: COPY THESE FROM YOUR profile.md. Use the same slugs as its 'Niche topics' list; they must match the 'topic' values you log in trajectories.jsonl (off-list topics score x0.5). The slugs below exist only so the fake example rows run. Delete this _readme key once filled; the scorer ignores it.",
   "val_ids": [
     "ex_002",
     "ex_004"
@@ -8,8 +9,8 @@
   "min_val_rows": 5,
   "author_followers": 150,
   "niche_topics": [
-    "checkout_drop",
-    "sell_through",
-    "ads"
+    "distribution",
+    "reply_craft",
+    "consistency"
   ]
 }

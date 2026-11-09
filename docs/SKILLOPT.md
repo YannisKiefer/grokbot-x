@@ -69,8 +69,10 @@ and do not count toward row minimums.
 A skill file may carry one machine-readable targeting rule:
 
 ```
-<!-- skillopt-policy {"min_parent_ratio": 12, "skip_dead_diary": true, "topics": ["ads", "checkout"]} -->
+<!-- skillopt-policy {"min_parent_ratio": 12, "skip_dead_diary": true, "topics": ["slug1", "slug2"]} -->
 ```
+
+(`topics` slugs come from the niche topics list in your `profile.md`.)
 
 Known keys, all about which posts to make, none about scoring:
 

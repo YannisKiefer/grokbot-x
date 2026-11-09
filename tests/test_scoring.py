@@ -74,8 +74,8 @@ def test_config_follower_default_applies_to_rows_without_followers(sc):
 
 
 def test_off_niche_penalty_from_policy(sc):
-    policy = {"niche_topics": ["ads", "checkout"]}
-    on = make_row("a", topic="ads")
+    policy = {"niche_topics": ["distribution", "reply_craft"]}
+    on = make_row("a", topic="distribution")
     off = make_row("b", topic="celebrity_gossip")
     assert sc.rescore(off, policy) < sc.rescore(on, policy)
 
@@ -100,10 +100,10 @@ def test_duplicate_halves_score(sc):
 
 
 def test_duplicate_ids_marks_later_row(sc):
-    r1 = make_row("first", text="most stores stare at sessions and miss the checkout drop")
-    r2 = make_row("second", text="most stores stare at sessions and miss the checkout drop")
+    r1 = make_row("first", text="most people stare at follower counts and miss the reply gap")
+    r2 = make_row("second", text="most people stare at follower counts and miss the reply gap")
     r2["ts"] = "2026-08-21T10:12:00Z"
-    r3 = make_row("other", text="completely different words about bid caps and learning phase")
+    r3 = make_row("other", text="completely different words about hooks and first lines")
     assert sc.duplicate_ids([r1, r2, r3]) == {"second"}
 
 
@@ -118,10 +118,10 @@ def test_policy_parse_defaults_when_no_block(sc):
 
 
 def test_policy_parse_overrides(sc):
-    text = 'prose\n<!-- skillopt-policy {"min_parent_ratio": 15, "topics": [" Ads "]} -->\n'
+    text = 'prose\n<!-- skillopt-policy {"min_parent_ratio": 15, "topics": [" Growth "]} -->\n'
     p = sc.parse_policy(text, "x.md")
     assert p["min_parent_ratio"] == 15.0
-    assert p["topics"] == ["ads"]
+    assert p["topics"] == ["growth"]
     assert p["skip_dead_diary"] is False
 
 
@@ -133,11 +133,11 @@ def test_policy_parse_rejects_reward_knobs(sc):
 
 
 def test_selects_applies_each_targeting_rule(sc):
-    gold = make_row("a", rtype="reply", ratio=20, topic="ads")
-    weak = make_row("b", rtype="reply", ratio=2, topic="ads")
-    dead = make_row("c", rtype="original", topic="ads")
+    gold = make_row("a", rtype="reply", ratio=20, topic="growth")
+    weak = make_row("b", rtype="reply", ratio=2, topic="growth")
+    dead = make_row("c", rtype="original", topic="growth")
     dead["features"]["viral_signal"] = "weak_dead_diary"
-    risky = make_row("d", rtype="reply", ratio=20, topic="ops")
+    risky = make_row("d", rtype="reply", ratio=20, topic="other")
     risky["features"]["parent_risky"] = True
     no_ratio = make_row("e", rtype="reply")
     p = dict(sc.DEFAULT_POLICY)
@@ -147,7 +147,7 @@ def test_selects_applies_each_targeting_rule(sc):
     assert sc.selects(dead, dict(p, min_parent_ratio=12))  # originals have no parent
     assert not sc.selects(dead, dict(p, skip_dead_diary=True))
     assert not sc.selects(risky, dict(p, skip_risky_parents=True))
-    assert not sc.selects(risky, dict(p, topics=["ads"]))
+    assert not sc.selects(risky, dict(p, topics=["growth"]))
 
 
 def test_policy_parse_rejects_unknown_key(sc):
@@ -162,7 +162,7 @@ def test_policy_parse_rejects_bad_json(sc):
 
 def test_policy_parse_rejects_wrong_types(sc):
     with pytest.raises(sc.DataError, match="topics"):
-        sc.parse_policy('<!-- skillopt-policy {"topics": "ads"} -->', "x.md")
+        sc.parse_policy('<!-- skillopt-policy {"topics": "growth"} -->', "x.md")
     with pytest.raises(sc.DataError, match="skip_dead_diary"):
         sc.parse_policy('<!-- skillopt-policy {"skip_dead_diary": 1} -->', "x.md")
 
@@ -191,7 +191,7 @@ def test_seed_is_deterministic(sc):
 
 
 def test_duplicate_ids_use_log_order_when_ts_missing(sc):
-    r1 = make_row("first", text="the checkout drop kills paid conversion")
-    r2 = make_row("second", text="the checkout drop kills paid conversion")
+    r1 = make_row("first", text="the weak first line kills reach")
+    r2 = make_row("second", text="the weak first line kills reach")
     r2.pop("ts")
     assert sc.duplicate_ids([r1, r2]) == {"second"}

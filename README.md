@@ -23,6 +23,10 @@ voice, publish through the official Typefully API, log every ship as a
 trajectory, and let a nightly gate rewrite the playbook only when the
 numbers prove the edit helped. Built for tired founders. Dumbed down on purpose.
 
+Works for any niche. SaaS founder, coach, creator, agency, ecommerce,
+anything: you fill ONE profile (`profile.md`) and every skill, prompt and
+scorer setting adapts to it. Nothing in the kit assumes what you sell.
+
 ## Why you can trust it
 
 | | |
@@ -69,30 +73,37 @@ Two lanes, never mixed:
 No pip install. Nothing to build. Python 3.10 or newer.
 
 ```bash
-# 1. Environment: three values (Typefully -> Settings -> API + Development mode)
+# 1. Who you are: copy profile.example.md to profile.md and fill it
+cp profile.example.md profile.md
+# edit profile.md: who you are, audience, niche topics, voice, limits.
+# one file, any niche; everything else in the kit reads from it.
+
+# 2. Environment: three values (Typefully -> Settings -> API + Development mode)
 cp .env.example .env
 # edit .env: YOUR_TYPEFULLY_API_KEY, YOUR_TYPEFULLY_SOCIAL_SET_ID, YOUR_HANDLE
 
-# 2. Training wheels: example data so you can see the scorer work
+# 3. Training wheels: example data so you can see the scorer work
 cp examples/best_skill.starter.md skillopt/best_skill.md
 cp skillopt/held_out.example.json skillopt/held_out.json
 cp examples/trajectories.example.jsonl skillopt/trajectories.jsonl
 python3 skillopt/sleep_cycle.py status
 
-# 3. Your first original (needs the real API key from step 1)
+# 4. Your first original (needs the real API key from step 2)
 python3 scripts/publish_original.py --text "your copy, hard first line"
 
-# 4. Your first reply: creates a DRAFT, you publish it in the Typefully UI
+# 5. Your first reply: creates a DRAFT, you publish it in the Typefully UI
 python3 scripts/create_reply_draft.py --text "the missing next step" \
   --reply-to https://x.com/someone/status/0123456789012345678
 
-# 5. Log the ship (same shape as examples/trajectories.example.jsonl)
+# 6. Log the ship (same shape as examples/trajectories.example.jsonl)
 python3 skillopt/sleep_cycle.py append --json '{"id":"d1","ts":"2026-11-08T10:00:00Z","type":"original","text":"...","features":{},"metrics":{},"split":"train"}'
 ```
 
 Then:
 
-1. Fill `docs/BRAND-BIBLE.template.md` so drafts know what you sell.
+1. Re-read `profile.md`: every draft the bot writes uses its voice, topics
+   and off-limits list. `docs/BRAND-BIBLE.template.md` is an optional
+   deeper worksheet; `profile.md` is the one that counts.
 2. Drop the five `skills/*/SKILL.md` files into your Grok Bot skill folder.
 3. Follow `docs/PLAYBOOK.md` daily. Replace the example trajectories with
    your own once real posts are logged.
@@ -104,19 +115,20 @@ drafted to Typefully.
 
 | Path | What |
 |---|---|
+| `profile.example.md` | copy to `profile.md` and fill: who you are, in any niche |
 | `docs/PLAYBOOK.md` | start here: the daily loop |
 | `docs/PUBLISH.md` | Typefully originals vs replies, allowed vs forbidden |
 | `docs/x-post-guide.md` | writing posts for the current algo weights |
 | `docs/x-human-cadence.md` | posting rhythm and volume discipline |
 | `docs/SKILLOPT.md` | the nightly gate, scorer reference |
 | `docs/OPERATOR.md` | voice and targeting rules |
-| `docs/BRAND-BIBLE.template.md` | fill-in product doctrine |
+| `docs/BRAND-BIBLE.template.md` | optional positioning worksheet (questions only) |
 | `skills/` | five Grok Bot SKILL.md files |
 | `skillopt/sleep_cycle.py` | scorer, gate, replay eval (offline) |
 | `skillopt/best_skill.md` | deployed skill; edit only via the gate |
 | `scripts/publish_original.py` | publish an original via Typefully |
 | `scripts/create_reply_draft.py` | create a reply draft for human publish |
-| `examples/` | fake trajectories + starter skill |
+| `examples/` | fake trajectories, starter skill, example profiles |
 
 Env vars: `YOUR_HANDLE`, `YOUR_TYPEFULLY_API_KEY`,
 `YOUR_TYPEFULLY_SOCIAL_SET_ID` (or `YOUR_SOCIAL_SET_ID`), optional

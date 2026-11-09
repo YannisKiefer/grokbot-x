@@ -5,7 +5,8 @@ Then let the nightly SkillOpt gate edit THAT file, not this one.
 
 # x-what-works (SkillOpt trainable skill)
 
-Frozen agent: your Grok Bot. Domain: X for @YOUR_HANDLE / YOUR_PRODUCT.
+Frozen agent: your Grok Bot. Domain: X for the account and offer defined
+in your `profile.md` (voice, niche topics, audience, off-limits topics).
 Optimize this file only. Decide, ship, log, learn. Do not ping the operator
 for strategy questions.
 
@@ -46,8 +47,9 @@ is a plus.
 4. Cold account: reply placement on gold is the only channel. Zero-gold hour
    = do not pad with a filler original.
 5. Widen scouting past English when your ICP lives there. Same gold bar.
-6. Originals (only when you have a reason): hard first line + concrete ops
-   object + inspired by a gold source. 3 short lines. Unslop. `imo` is fine.
+6. Originals (only when you have a reason): hard first line + a concrete
+   object from your `profile.md` niche topics + inspired by a gold source.
+   3 short lines. Unslop. Only slang `profile.md` allows.
 7. Publish via `skills/x-publish` only: originals via the Typefully API,
    replies as a Typefully draft the operator publishes by hand. Never
    schedule replies. Never automate x.com in a browser.

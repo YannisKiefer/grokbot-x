@@ -65,7 +65,7 @@ def env(monkeypatch):
 def run_publish(pub, monkeypatch, ft, *extra):
     monkeypatch.setattr(pub.urllib.request, "urlopen", ft)
     monkeypatch.setattr(pub.time, "sleep", lambda s: None)
-    monkeypatch.setattr("sys.argv", ["prog", "--text", "hello ops world", *extra])
+    monkeypatch.setattr("sys.argv", ["prog", "--text", "hello niche world", *extra])
     return pub.main()
 
 

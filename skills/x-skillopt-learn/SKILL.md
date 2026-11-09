@@ -19,7 +19,8 @@ blockers only. No "want me to" questions.
 ## After EVERY ship (rollout)
 
 1. Read `skillopt/best_skill.md` BEFORE drafting (during a live trial on a
-   trial day: `skillopt/proposed.md`).
+   trial day: `skillopt/proposed.md`), and draft in the voice and niche
+   the operator's `profile.md` defines.
 2. Ship via the locked Typefully paths in `docs/PUBLISH.md`.
 3. Log it: `python3 skillopt/sleep_cycle.py append --json '{...}'` with id,
    ts, type, url, text, features (viral_ratio, viral_signal, topic,
